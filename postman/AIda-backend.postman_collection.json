@@ -1230,7 +1230,7 @@
             "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"canal\": \"WEB\"\n}",
+              "raw": "{\n  \"canal\": \"WEB\",\n  \"mensaje\": \"¿Cuándo empiezan las clases?\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1482,7 +1482,7 @@
             "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Personal de Bedelía\",\n  \"email\": \"bedelia@ejemplo.com\"\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1515,7 +1515,7 @@
             "description": "Actualiza solo los campos enviados del registro con id 1.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Personal de Alumnos\"\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1541,6 +1541,302 @@
               ]
             },
             "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Validaciones (errores esperados)",
+      "description": "Cada pedido manda un dato incorrecto. La respuesta esperada es 400 con el mensaje indicado.",
+      "item": [
+        {
+          "name": "Falta un campo obligatorio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/carreras",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carreras"
+              ]
+            },
+            "description": "Respuesta esperada: 400 con el mensaje \"El nombre es obligatorio.\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"GRADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Texto donde se espera un número",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/materias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "materias"
+              ]
+            },
+            "description": "Respuesta esperada: 400 con el mensaje \"El nivel debe ser un número entero.\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carreraId\": 1,\n  \"codigo\": 24,\n  \"nombre\": \"Inteligencia Artificial\",\n  \"nivel\": \"cinco\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Valor distinto de true o false",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/carreras",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carreras"
+              ]
+            },
+            "description": "Respuesta esperada: 400 con el mensaje \"El campo activa debe ser true o false.\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ingeniería Química\",\n  \"tipo\": \"GRADO\",\n  \"activa\": \"si\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Valor fuera de la lista permitida",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mesas-examen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mesas-examen"
+              ]
+            },
+            "description": "Respuesta esperada: 400 con el mensaje \"El llamado debe ser I, II o III.\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materiaId\": 6,\n  \"turno\": 7,\n  \"llamado\": \"IV\",\n  \"fecha\": \"2026-12-14\",\n  \"cierreInscripcion\": \"2026-12-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Fecha con formato incorrecto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inscripciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inscripciones"
+              ]
+            },
+            "description": "Respuesta esperada: 400 con el mensaje \"La fecha de inicio debe tener el formato AAAA-MM-DD.\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Inscripción a las asignaturas del 2° cuatrimestre\",\n  \"tipo\": \"CURSADO\",\n  \"fechaDesde\": \"10/08/2026\",\n  \"fechaHasta\": \"2026-08-14\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "URL inválida",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documentos"
+              ]
+            },
+            "description": "Respuesta esperada: 400 con el mensaje \"La URL debe ser una dirección web válida (http o https).\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Calendario Académico 2026\",\n  \"tipo\": \"RESOLUCION\",\n  \"url\": \"frt.utn\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Campo que el DTO no declara",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tramites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tramites"
+              ]
+            },
+            "description": "Respuesta esperada: 400 con el mensaje \"property costo should not exist\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cambio de plan\",\n  \"descripcion\": \"Presentación de notas.\",\n  \"costo\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualización con un valor inválido",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chat/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chat",
+                "1"
+              ]
+            },
+            "description": "Respuesta esperada: 400 con el mensaje \"El estado debe ser ABIERTA o CERRADA.\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"PAUSADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolver una derivación sin respuesta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/derivaciones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "derivaciones",
+                "1"
+              ]
+            },
+            "description": "Respuesta esperada: 400 con el mensaje \"Para resolver la derivación hay que enviar la respuesta.\".",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"RESUELTA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }
