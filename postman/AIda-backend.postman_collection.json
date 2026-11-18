@@ -1,0 +1,1550 @@
+{
+  "info": {
+    "name": "AIda - Backend",
+    "description": "Pedidos para probar la API de AIda, el Asistente Institucional De Alumnos de la UTN FRT. La variable baseUrl apunta al servidor local; se cambia en la pestaña Variables de la colección.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ],
+  "item": [
+    {
+      "name": "App",
+      "item": [
+        {
+          "name": "Estado del servidor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Responde \"Hello World!\" si el servidor está funcionando."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Carreras",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carreras",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carreras"
+              ]
+            },
+            "description": "Devuelve todos los registros de carreras."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carreras/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carreras",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/carreras",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carreras"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Tecnicatura Universitaria en Programación\",\n  \"tipo\": \"PREGRADO\",\n  \"activa\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/carreras/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carreras",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activa\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carreras/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carreras",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Materias",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/materias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "materias"
+              ]
+            },
+            "description": "Devuelve todos los registros de materias."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/materias/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "materias",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/materias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "materias"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carreraId\": 1,\n  \"codigo\": 24,\n  \"nombre\": \"Inteligencia Artificial\",\n  \"nivel\": 5,\n  \"esElectiva\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/materias/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "materias",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nivel\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/materias/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "materias",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mesas de examen",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mesas-examen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mesas-examen"
+              ]
+            },
+            "description": "Devuelve todos los registros de mesas de examen."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mesas-examen/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mesas-examen",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mesas-examen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mesas-examen"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materiaId\": 6,\n  \"turno\": 7,\n  \"llamado\": \"I\",\n  \"fecha\": \"2026-12-14\",\n  \"cierreInscripcion\": \"2026-12-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mesas-examen/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mesas-examen",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"llamado\": \"II\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mesas-examen/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mesas-examen",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inscripciones",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inscripciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inscripciones"
+              ]
+            },
+            "description": "Devuelve todos los registros de inscripciones."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inscripciones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inscripciones",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inscripciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inscripciones"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Inscripción a las asignaturas del 2° cuatrimestre\",\n  \"tipo\": \"CURSADO\",\n  \"fechaDesde\": \"2026-08-10\",\n  \"fechaHasta\": \"2026-08-14\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inscripciones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inscripciones",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fechaHasta\": \"2026-08-15\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inscripciones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inscripciones",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Calendario académico",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/calendario-academico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "calendario-academico"
+              ]
+            },
+            "description": "Devuelve todos los registros de calendario académico."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/calendario-academico/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "calendario-academico",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calendario-academico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "calendario-academico"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Receso académico de invierno\",\n  \"tipo\": \"RECESO\",\n  \"fechaDesde\": \"2026-07-13\",\n  \"fechaHasta\": \"2026-07-24\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calendario-academico/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "calendario-academico",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Receso de invierno\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/calendario-academico/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "calendario-academico",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ingreso",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ingreso",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingreso"
+              ]
+            },
+            "description": "Devuelve todos los registros de ingreso."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ingreso/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingreso",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ingreso",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingreso"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Prueba de Suficiencia Diciembre 2026\",\n  \"descripcion\": \"Matemática y Física.\",\n  \"modalidad\": \"LIBRE\",\n  \"inscripcionDesde\": \"2026-12-11\",\n  \"inscripcionHasta\": \"2026-12-17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ingreso/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingreso",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"modalidad\": \"PRESENCIAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ingreso/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ingreso",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Trámites",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tramites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tramites"
+              ]
+            },
+            "description": "Devuelve todos los registros de trámites."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tramites/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tramites",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tramites",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tramites"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cambio de plan\",\n  \"descripcion\": \"Presentación de notas para pasar a otro plan de estudios.\",\n  \"plazoDesde\": \"2026-04-06\",\n  \"plazoHasta\": \"2026-04-17\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tramites/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tramites",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oficina\": \"Departamento Alumnos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tramites/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tramites",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documentos",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/documentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documentos"
+              ]
+            },
+            "description": "Devuelve todos los registros de documentos."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/documentos/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documentos",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documentos"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Calendario Académico 2026 - Carreras de grado\",\n  \"tipo\": \"RESOLUCION\",\n  \"numero\": \"2394/2025\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/documentos/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documentos",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vigenteHasta\": \"2027-03-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/documentos/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documentos",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Preguntas frecuentes",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/preguntas-frecuentes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "preguntas-frecuentes"
+              ]
+            },
+            "description": "Devuelve todos los registros de preguntas frecuentes."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/preguntas-frecuentes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "preguntas-frecuentes",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/preguntas-frecuentes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "preguntas-frecuentes"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pregunta\": \"¿Dónde queda la facultad?\",\n  \"respuesta\": \"En Rivadavia 1050, San Miguel de Tucumán.\",\n  \"categoria\": \"Institucional\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/preguntas-frecuentes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "preguntas-frecuentes",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoria\": \"Contacto\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/preguntas-frecuentes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "preguntas-frecuentes",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chat"
+              ]
+            },
+            "description": "Devuelve todos los registros de chat."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chat/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chat",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chat"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canal\": \"WEB\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chat/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chat",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"CERRADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chat/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chat",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Derivaciones",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/derivaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "derivaciones"
+              ]
+            },
+            "description": "Devuelve todos los registros de derivaciones."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/derivaciones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "derivaciones",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/derivaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "derivaciones"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversacionId\": 1,\n  \"motivo\": \"Sin información oficial sobre el costo del seminario\",\n  \"prioridad\": \"ALTA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/derivaciones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "derivaciones",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_CURSO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/derivaciones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "derivaciones",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "Devuelve todos los registros de usuarios."
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "1"
+              ]
+            },
+            "description": "Devuelve el registro con id 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "Crea un registro. Responde con estado 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Personal de Bedelía\",\n  \"email\": \"bedelia@ejemplo.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "1"
+              ]
+            },
+            "description": "Actualiza solo los campos enviados del registro con id 1.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Personal de Alumnos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "1"
+              ]
+            },
+            "description": "Elimina el registro con id 1."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
