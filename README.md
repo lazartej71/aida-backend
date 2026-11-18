@@ -15,6 +15,7 @@ El TP9 incluye la estructura modular y doce recursos REST con operaciones CRUD d
 
 ## Tecnologías
 - **Nest.js** con **TypeScript**
+- **class-validator** y **class-transformer** para validar los datos que llegan a la API
 - **Vitest** para los tests
 - **ESLint** y **Prettier** para revisar y formatear el código
 
@@ -42,7 +43,7 @@ El archivo `.env` **no se sube a GitHub** (figura en `.gitignore`). Cada integra
 Las reglas de ESLint se configuran en `eslint.config.js`, usando el formato actual de ESLint y soporte para TypeScript y Vitest. El formato del código se aplica por separado con `npm run format`, según `.prettierrc`.
 
 ## Pruebas con Postman
-La carpeta `postman/` tiene la colección `AIda-backend.postman_collection.json`, con los pedidos de todas las rutas: una carpeta por recurso con `GET` para listar, `GET /:id`, `POST`, `PATCH` y `DELETE`, y cuerpos JSON de ejemplo.
+La carpeta `postman/` tiene la colección `AIda-backend.postman_collection.json`, con los pedidos de todas las rutas: una carpeta por recurso con `GET` para listar, `GET /:id`, `POST`, `PATCH` y `DELETE`, y cuerpos JSON de ejemplo. La carpeta **Validaciones (errores esperados)** tiene pedidos con datos incorrectos, cada uno con el error 400 que tiene que devolver.
 
 Para usarla:
 1. En Postman, **Import** y elegir el archivo de la colección.
@@ -83,9 +84,9 @@ src/
 │   ├── guards/                  protección de rutas
 │   ├── decorators/
 │   ├── filters/                 manejo de errores
-│   ├── pipes/                   validación de datos
+│   ├── pipes/                   validación de datos (crearValidacion)
 │   ├── interceptors/
-│   ├── enums/
+│   ├── enums/                   valores permitidos de los campos (tipo, llamado, estado…)
 │   └── interfaces/
 ├── config/                      configuración y variables de entorno
 └── database/
@@ -95,7 +96,7 @@ src/
 test/                            tests de punta a punta
 ```
 
-Dentro de cada recurso, el controlador recibe las peticiones HTTP y llama al servicio, que contiene las respuestas de ejemplo. El módulo reúne su controlador y servicio. `dto/` contiene las clases para los datos de creación y actualización; `UpdateDto` usa `PartialType` de `@nestjs/mapped-types`, dependencia agregada por el generador de Usuarios. `entities/` contiene la clase que representará al recurso. Por ahora los DTO y las entidades están vacíos, sin conexión a una base de datos. Las carpetas reservadas para futuras etapas conservan sus archivos `.gitkeep`.
+Dentro de cada recurso, el controlador recibe las peticiones HTTP y llama al servicio, que contiene las respuestas de ejemplo. El módulo reúne su controlador y servicio. `dto/` contiene las clases para los datos de creación y actualización; `UpdateDto` usa `PartialType` de `@nestjs/mapped-types`, dependencia agregada por el generador de Usuarios. `entities/` contiene la clase que representará al recurso. Desde el TP10 los DTO definen y validan los datos de cada recurso (ver más abajo); las entidades siguen vacías hasta la conexión con la base de datos. Las carpetas reservadas para futuras etapas conservan sus archivos `.gitkeep`.
 
 ## Alcance del TP9
 
@@ -140,7 +141,48 @@ npm run start:dev
 
 Si el puerto 3000 está ocupado, se puede probar otro puerto en PowerShell con `$env:PORT = '3001'` antes de iniciar. La integración Observe ya venía en el proyecto; sin sus credenciales muestra una advertencia y no envía telemetría.
 
-Se dejan para próximos trabajos la definición de campos y validaciones, la persistencia, la autenticación, los permisos, la conexión con el frontend y la integración de IA. Las carpetas `auth` (autenticación), `ia` (proveedores de IA), `asistente` (coordinación de respuestas), `canales` (adaptadores de comunicación) y `metricas` (estadísticas) quedan reservadas: sus responsabilidades no requieren un CRUD genérico en este TP. Chat todavía no responde consultas ni se conecta a un modelo de lenguaje.
+Se dejan para próximos trabajos la persistencia, la autenticación, los permisos, la conexión con el frontend y la integración de IA. Las carpetas `auth` (autenticación), `ia` (proveedores de IA), `asistente` (coordinación de respuestas), `canales` (adaptadores de comunicación) y `metricas` (estadísticas) quedan reservadas: sus responsabilidades no requieren un CRUD genérico en este TP. Chat todavía no responde consultas ni se conecta a un modelo de lenguaje.
+
+## DTO y validación (TP10)
+
+Un **DTO** (*Data Transfer Object*) es una clase que describe qué datos espera recibir cada operación. Con los decoradores de **class-validator** (`@IsString`, `@IsInt`, `@IsEnum`, `@IsDateString`, `@MaxLength`, etc.) indica qué condiciones tiene que cumplir cada campo. El DTO no guarda datos: solo describe y valida lo que entra.
+
+`main.ts` activa la validación para toda la API con `app.useGlobalPipes(crearValidacion())`. La función está en `src/common/pipes/validacion.pipe.ts` y crea un `ValidationPipe` con dos opciones:
+- `whitelist`: descarta los campos que el DTO no declara.
+- `forbidNonWhitelisted`: responde con un error si llega un campo que el DTO no declara.
+
+El controlador recibe el cuerpo con `@Body()` y su tipo es el DTO, así Nest valida los datos **antes** de ejecutar el método. Si algo no cumple, responde `400 Bad Request` con los mensajes de error:
+
+```json
+{
+  "message": ["El nombre es obligatorio."],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+Cada módulo tiene su `Create...Dto`, con los mismos campos que su tabla en la base de datos. El `Update...Dto` usa `PartialType`, así todos los campos pasan a ser opcionales para las actualizaciones parciales:
+
+| Recurso | Campos obligatorios | Campos opcionales |
+|---|---|---|
+| `carreras` | `nombre`, `tipo` | `duracionAnios`, `plan`, `activa` |
+| `materias` | `carreraId`, `codigo`, `nombre`, `nivel` | `esElectiva` |
+| `mesas-examen` | `materiaId`, `turno`, `llamado`, `fecha`, `cierreInscripcion` | `documentoId` |
+| `inscripciones` | `descripcion`, `tipo`, `fechaDesde`, `fechaHasta` | `nivel`, `documentoId` |
+| `calendario-academico` | `titulo`, `tipo`, `fechaDesde` | `fechaHasta`, `documentoId` |
+| `ingreso` | `titulo`, `descripcion` | `modalidad`, `inscripcionDesde`, `inscripcionHasta` |
+| `tramites` | `nombre`, `descripcion` | `oficina`, `plazoDesde`, `plazoHasta`, `documentoId` |
+| `documentos` | `titulo`, `tipo` | `numero`, `url`, `vigenteDesde`, `vigenteHasta` |
+| `preguntas-frecuentes` | `pregunta`, `respuesta`, `categoria` | `documentoId` |
+| `chat` | `canal`, `mensaje` | `estado` (solo al actualizar) |
+| `derivaciones` | `conversacionId`, `motivo` | `prioridad`; al actualizar, `estado` y `respuesta` |
+
+- Las fechas se envían como texto con formato `AAAA-MM-DD`.
+- Los campos con valores fijos (`tipo`, `llamado`, `canal`, `estado`, `prioridad`, `modalidad`) usan los *enums* de `src/common/enums/`, con los mismos valores que las restricciones de la base de datos.
+- Para marcar una derivación como `RESUELTA` hay que enviar la `respuesta`.
+- `usuarios` y `auth` se trabajan en el TP12, así que su DTO todavía no tiene campos.
+
+**Cómo probarlo:** en Postman, la carpeta **Validaciones (errores esperados)** manda datos incorrectos: un campo obligatorio que falta, texto donde va un número, un valor distinto de `true` o `false`, una fecha con otro formato y un campo que el DTO no declara. Los tests e2e (`npm run test:e2e`) prueban esos mismos casos.
 
 ## Base de datos
 
