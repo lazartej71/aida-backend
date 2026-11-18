@@ -17,18 +17,30 @@ export class CreateIngresoDto {
 
   @IsString({ message: 'La descripción debe ser un texto.' })
   @IsNotEmpty({ message: 'La descripción es obligatoria.' })
-  @MaxLength(5000, { message: 'La descripción no puede superar los 5000 caracteres.' })
+  @MaxLength(5000, {
+    message: 'La descripción no puede superar los 5000 caracteres.',
+  })
   descripcion: string;
 
   @IsOptional()
-  @IsEnum(ModalidadIngreso, { message: 'La modalidad debe ser PRESENCIAL o LIBRE.' })
+  @IsEnum(ModalidadIngreso, {
+    message: 'La modalidad debe ser PRESENCIAL o LIBRE.',
+  })
   modalidad?: ModalidadIngreso;
 
   @IsOptional()
-  @IsDateString({}, { message: 'El inicio de la inscripción debe tener el formato AAAA-MM-DD.' })
+  @IsDateString(
+    {},
+    {
+      message: 'El inicio de la inscripción debe tener el formato AAAA-MM-DD.',
+    },
+  )
   inscripcionDesde?: string;
 
   @IsOptional()
-  @IsDateString({}, { message: 'El fin de la inscripción debe tener el formato AAAA-MM-DD.' })
+  @IsDateString(
+    {},
+    { message: 'El fin de la inscripción debe tener el formato AAAA-MM-DD.' },
+  )
   inscripcionHasta?: string;
 }

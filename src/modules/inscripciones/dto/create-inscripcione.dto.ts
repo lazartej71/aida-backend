@@ -15,7 +15,9 @@ import { TipoInscripcion } from '../../../common/enums/tipo-inscripcion.enum.js'
 export class CreateInscripcioneDto {
   @IsString({ message: 'La descripción debe ser un texto.' })
   @IsNotEmpty({ message: 'La descripción es obligatoria.' })
-  @MaxLength(200, { message: 'La descripción no puede superar los 200 caracteres.' })
+  @MaxLength(200, {
+    message: 'La descripción no puede superar los 200 caracteres.',
+  })
   descripcion: string;
 
   @IsEnum(TipoInscripcion, { message: 'El tipo debe ser CURSADO o EXAMEN.' })
@@ -28,10 +30,16 @@ export class CreateInscripcioneDto {
   @Max(6, { message: 'El nivel debe estar entre 1 y 6.' })
   nivel?: number;
 
-  @IsDateString({}, { message: 'La fecha de inicio debe tener el formato AAAA-MM-DD.' })
+  @IsDateString(
+    {},
+    { message: 'La fecha de inicio debe tener el formato AAAA-MM-DD.' },
+  )
   fechaDesde: string;
 
-  @IsDateString({}, { message: 'La fecha de fin debe tener el formato AAAA-MM-DD.' })
+  @IsDateString(
+    {},
+    { message: 'La fecha de fin debe tener el formato AAAA-MM-DD.' },
+  )
   fechaHasta: string;
 
   @IsOptional()

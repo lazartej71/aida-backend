@@ -27,14 +27,23 @@ export class CreateDocumentoDto {
   numero?: string;
 
   @IsOptional()
-  @IsUrl({ require_protocol: true }, { message: 'La URL debe ser una dirección web válida (http o https).' })
+  @IsUrl(
+    { require_protocol: true },
+    { message: 'La URL debe ser una dirección web válida (http o https).' },
+  )
   url?: string;
 
   @IsOptional()
-  @IsDateString({}, { message: 'El inicio de la vigencia debe tener el formato AAAA-MM-DD.' })
+  @IsDateString(
+    {},
+    { message: 'El inicio de la vigencia debe tener el formato AAAA-MM-DD.' },
+  )
   vigenteDesde?: string;
 
   @IsOptional()
-  @IsDateString({}, { message: 'El fin de la vigencia debe tener el formato AAAA-MM-DD.' })
+  @IsDateString(
+    {},
+    { message: 'El fin de la vigencia debe tener el formato AAAA-MM-DD.' },
+  )
   vigenteHasta?: string;
 }

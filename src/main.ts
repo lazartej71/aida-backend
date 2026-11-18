@@ -10,7 +10,9 @@ async function bootstrap() {
   // Valida el cuerpo de cada solicitud con las reglas de su DTO antes de llegar al controlador.
   // whitelist descarta los campos que el DTO no declara y forbidNonWhitelisted
   // responde con un error si llegan, para que no pasen datos inesperados
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+  );
 
   await app.listen(process.env.PORT ?? 3000);
 }

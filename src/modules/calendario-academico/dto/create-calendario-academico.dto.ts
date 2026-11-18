@@ -22,12 +22,18 @@ export class CreateCalendarioAcademicoDto {
   })
   tipo: TipoEvento;
 
-  @IsDateString({}, { message: 'La fecha de inicio debe tener el formato AAAA-MM-DD.' })
+  @IsDateString(
+    {},
+    { message: 'La fecha de inicio debe tener el formato AAAA-MM-DD.' },
+  )
   fechaDesde: string;
 
   // Sin fecha de fin, el evento dura un solo día
   @IsOptional()
-  @IsDateString({}, { message: 'La fecha de fin debe tener el formato AAAA-MM-DD.' })
+  @IsDateString(
+    {},
+    { message: 'La fecha de fin debe tener el formato AAAA-MM-DD.' },
+  )
   fechaHasta?: string;
 
   @IsOptional()
