@@ -41,6 +41,14 @@ El archivo `.env` **no se sube a GitHub** (figura en `.gitignore`). Cada integra
 
 Las reglas de ESLint se configuran en `eslint.config.js`, usando el formato actual de ESLint y soporte para TypeScript y Vitest. El formato del código se aplica por separado con `npm run format`, según `.prettierrc`.
 
+## Pruebas con Postman
+La carpeta `postman/` tiene la colección `AIda-backend.postman_collection.json`, con los pedidos de todas las rutas: una carpeta por recurso con `GET` para listar, `GET /:id`, `POST`, `PATCH` y `DELETE`, y cuerpos JSON de ejemplo.
+
+Para usarla:
+1. En Postman, **Import** y elegir el archivo de la colección.
+2. Levantar el servidor con `npm run start:dev`.
+3. Enviar los pedidos. La variable `baseUrl` (por defecto `http://localhost:3000`) se cambia en la pestaña **Variables** de la colección si el servidor usa otro puerto.
+
 ## Estructura
 ```
 src/
