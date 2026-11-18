@@ -81,8 +81,9 @@ src/
 │   └── interfaces/
 ├── config/                      configuración y variables de entorno
 └── database/
-    ├── migrations/              cambios en la estructura de la base de datos
-    └── seeds/                   datos iniciales
+    ├── migrations/              creación de las tablas (001_crear_tablas.sql)
+    ├── seeds/                   datos iniciales (001_datos_iniciales.sql)
+    └── verificacion.sql         consultas para comprobar los datos y las restricciones
 test/                            tests de punta a punta
 ```
 
@@ -133,5 +134,53 @@ Si el puerto 3000 está ocupado, se puede probar otro puerto en PowerShell con `
 
 Se dejan para próximos trabajos la definición de campos y validaciones, la persistencia, la autenticación, los permisos, la conexión con el frontend y la integración de IA. Las carpetas `auth` (autenticación), `ia` (proveedores de IA), `asistente` (coordinación de respuestas), `canales` (adaptadores de comunicación) y `metricas` (estadísticas) quedan reservadas: sus responsabilidades no requieren un CRUD genérico en este TP. Chat todavía no responde consultas ni se conecta a un modelo de lenguaje.
 
+## Base de datos
+
+Se usa **PostgreSQL**, alojado en **Supabase**. La conexión se configura en el `.env` con `DATABASE_URL`.
+
+### Tablas y relaciones
+```
+carreras ──< materias >──< correlatividades     (una materia requiere otras para cursar o rendir)
+materias ──< mesas_examen                       (turno, llamado I/II/III, fecha y cierre de inscripción)
+conversaciones ──< mensajes
+conversaciones ──< derivaciones
+documentos ──< mesas_examen, periodos_inscripcion, eventos_academicos,
+               tramites, preguntas_frecuentes, mensajes   (el documento oficial que respalda cada dato)
+```
+`──<` indica una relación de uno a muchos.
+
+| Tabla | Qué guarda | Módulo |
+|---|---|---|
+| `documentos` | Resoluciones, ordenanzas y planes de estudio, con su vigencia | `documentos` |
+| `carreras` | Carreras de grado y de pregrado | `carreras` |
+| `materias` | Materias de cada carrera, con código y nivel | `materias` |
+| `correlatividades` | Qué materias requiere cada una, para cursar o rendir, y en qué condición | `materias` |
+| `mesas_examen` | Turnos y llamados de examen con su cierre de inscripción | `mesas-examen` |
+| `periodos_inscripcion` | Períodos de inscripción al cursado | `inscripciones` |
+| `eventos_academicos` | Clases, recesos y pruebas de suficiencia del calendario | `calendario-academico` |
+| `info_ingreso` | Seminario de ingreso y pruebas de suficiencia | `ingreso` |
+| `tramites` | Trámites de los estudiantes y su plazo | `tramites` |
+| `preguntas_frecuentes` | Preguntas con su respuesta oficial y su fuente | `preguntas-frecuentes` |
+| `conversaciones` y `mensajes` | Consultas de los estudiantes al asistente | `chat` |
+| `derivaciones` | Consultas que el asistente pasa al personal, con prioridad y estado | `derivaciones` |
+
+Cada tabla tiene clave primaria `id` (salvo `correlatividades`, que usa una clave compuesta). Las restricciones cuidan la coherencia de los datos: claves foráneas entre tablas, valores permitidos con `CHECK` (por ejemplo, el llamado solo puede ser I, II o III), fechas de fin posteriores a las de inicio, nombres únicos y una derivación resuelta que obligatoriamente tiene respuesta.
+
+### Datos iniciales
+Cada tabla tiene al menos 5 registros. Los datos institucionales salen del sitio oficial de la UTN FRT: el Calendario Académico 2026 (Resolución 2394/2025), el plan de estudio de Ingeniería en Sistemas de Información 2023 y el Seminario de Ingreso 2027. Las conversaciones, mensajes y derivaciones son de ejemplo.
+
+### Cómo crearla
+En Supabase, desde el **SQL Editor**, ejecutar en este orden:
+1. `src/database/migrations/001_crear_tablas.sql`
+2. `src/database/seeds/001_datos_iniciales.sql`
+3. `src/database/verificacion.sql`, para comprobar que cada tabla tenga sus registros, que las relaciones sean correctas y que no haya datos huérfanos. Al final del archivo hay pruebas de restricciones que tienen que fallar.
+
 ## Flujo de trabajo
-Cada tarea se hace en una rama `feature/...`, se abre un PR a `dev` y, una vez revisado, un PR de `dev` a `main`.
+Cada tarea se hace en su propia rama, se abre un PR a `dev` y, una vez revisado, un PR de `dev` a `main`, la rama estable.
+
+| Rama | Para qué |
+|---|---|
+| `feature/nombre` | Nuevas funcionalidades |
+| `fix/nombre` | Correcciones |
+| `refactor/nombre` | Reorganización o mejora del código |
+| `docs/nombre` | Cambios en la documentación |
