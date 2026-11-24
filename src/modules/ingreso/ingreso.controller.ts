@@ -1,34 +1,48 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { IngresoService } from './ingreso.service.js';
 import { CreateIngresoDto } from './dto/create-ingreso.dto.js';
 import { UpdateIngresoDto } from './dto/update-ingreso.dto.js';
-
+import { ListadoDto } from '../../common/dto/listado.dto.js';
+import { Publico, Roles } from '../auth/acceso.decorator.js';
+@ApiBearerAuth()
+@ApiTags('ingreso')
 @Controller('ingreso')
+@Roles('PERSONAL', 'ADMIN')
 export class IngresoController {
-  constructor(private readonly ingresoService: IngresoService) {}
-
-  @Post()
-  create(@Body() createIngresoDto: CreateIngresoDto) {
-    return this.ingresoService.create(createIngresoDto);
+  constructor(private readonly service: IngresoService) {}
+  @Post() create(@Body() dto: CreateIngresoDto) {
+    return this.service.create(dto);
   }
-
+  @ApiOperation({ security: [] })
+  @Publico()
   @Get()
-  findAll() {
-    return this.ingresoService.findAll();
+  findAll(@Query() query: ListadoDto) {
+    return this.service.findAll(query);
   }
-
+  @ApiOperation({ security: [] })
+  @Publico()
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ingresoService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findOne(id);
   }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateIngresoDto: UpdateIngresoDto) {
-    return this.ingresoService.update(+id, updateIngresoDto);
+  @Patch(':id') update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateIngresoDto,
+  ) {
+    return this.service.update(id, dto);
   }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.ingresoService.remove(+id);
+  @Delete(':id') remove(@Param('id', ParseIntPipe) id: number) {
+    return this.service.remove(id);
   }
 }

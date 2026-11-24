@@ -1,20 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { CalendarioAcademicoController } from './calendario-academico.controller.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import { CalendarioAcademicoService } from './calendario-academico.service.js';
-
 describe('CalendarioAcademicoController', () => {
-  let controller: CalendarioAcademicoController;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+  it('se resuelve con sus dependencias explícitas', async () => {
+    const module = await Test.createTestingModule({
       controllers: [CalendarioAcademicoController],
-      providers: [CalendarioAcademicoService],
+      providers: [
+        CalendarioAcademicoService,
+        { provide: PrismaService, useValue: {} },
+      ],
     }).compile();
-
-    controller = module.get<CalendarioAcademicoController>(CalendarioAcademicoController);
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+    expect(module.get(CalendarioAcademicoController)).toBeDefined();
   });
 });

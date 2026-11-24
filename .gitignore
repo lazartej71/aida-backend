@@ -62,3 +62,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Certificado local de Supabase
 /prod-supabase.cer
+
+# Entornos locales de Postman: pueden contener credenciales y tokens.
+*.postman_environment.json
+postman/*.local.json

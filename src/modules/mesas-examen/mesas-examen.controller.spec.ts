@@ -1,20 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { MesasExamenController } from './mesas-examen.controller.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import { MesasExamenService } from './mesas-examen.service.js';
-
 describe('MesasExamenController', () => {
-  let controller: MesasExamenController;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+  it('se resuelve con sus dependencias explícitas', async () => {
+    const module = await Test.createTestingModule({
       controllers: [MesasExamenController],
-      providers: [MesasExamenService],
+      providers: [MesasExamenService, { provide: PrismaService, useValue: {} }],
     }).compile();
-
-    controller = module.get<MesasExamenController>(MesasExamenController);
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+    expect(module.get(MesasExamenController)).toBeDefined();
   });
 });

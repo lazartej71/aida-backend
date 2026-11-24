@@ -1,34 +1,64 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { DocumentosService } from './documentos.service.js';
 import { CreateDocumentoDto } from './dto/create-documento.dto.js';
 import { UpdateDocumentoDto } from './dto/update-documento.dto.js';
-
+import { ListadoDto } from '../../common/dto/listado.dto.js';
+import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { ContenidoDocumentoDto } from './dto/contenido-documento.dto.js';
+@ApiBearerAuth()
+@ApiTags('documentos')
 @Controller('documentos')
+@Roles('PERSONAL', 'ADMIN')
 export class DocumentosController {
-  constructor(private readonly documentosService: DocumentosService) {}
-
-  @Post()
-  create(@Body() createDocumentoDto: CreateDocumentoDto) {
-    return this.documentosService.create(createDocumentoDto);
+  @Post(':id/contenido') indexar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ContenidoDocumentoDto,
+  ) {
+    return this.service.indexar(id, dto.contenido);
   }
-
+  @Get(':id/versiones') versiones(@Param('id', ParseIntPipe) id: number) {
+    return this.service.versiones(id);
+  }
+  @Get(':id/versiones/:numero') version(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('numero', ParseIntPipe) numero: number,
+  ) {
+    return this.service.leerVersion(id, numero);
+  }
+  constructor(private readonly service: DocumentosService) {}
+  @Post() create(@Body() dto: CreateDocumentoDto) {
+    return this.service.create(dto);
+  }
+  @ApiOperation({ security: [] })
+  @Publico()
   @Get()
-  findAll() {
-    return this.documentosService.findAll();
+  findAll(@Query() query: ListadoDto) {
+    return this.service.findAll(query);
   }
-
+  @ApiOperation({ security: [] })
+  @Publico()
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.documentosService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findOne(id);
   }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDocumentoDto: UpdateDocumentoDto) {
-    return this.documentosService.update(+id, updateDocumentoDto);
+  @Patch(':id') update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateDocumentoDto,
+  ) {
+    return this.service.update(id, dto);
   }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.documentosService.remove(+id);
+  @Delete(':id') remove(@Param('id', ParseIntPipe) id: number) {
+    return this.service.remove(id);
   }
 }
