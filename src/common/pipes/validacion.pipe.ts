@@ -5,5 +5,9 @@ import { ValidationPipe } from '@nestjs/common';
 // responde con un error si llegan, para que no pasen datos inesperados.
 // La usan main.ts y los tests e2e, así los dos validan igual
 export function crearValidacion() {
-  return new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
+  return new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  });
 }
