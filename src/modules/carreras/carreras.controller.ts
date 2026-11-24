@@ -1,34 +1,48 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CarrerasService } from './carreras.service.js';
 import { CreateCarreraDto } from './dto/create-carrera.dto.js';
 import { UpdateCarreraDto } from './dto/update-carrera.dto.js';
-
+import { ListadoDto } from '../../common/dto/listado.dto.js';
+import { Publico, Roles } from '../auth/acceso.decorator.js';
+@ApiBearerAuth()
+@ApiTags('carreras')
 @Controller('carreras')
+@Roles('PERSONAL', 'ADMIN')
 export class CarrerasController {
-  constructor(private readonly carrerasService: CarrerasService) {}
-
-  @Post()
-  create(@Body() createCarreraDto: CreateCarreraDto) {
-    return this.carrerasService.create(createCarreraDto);
+  constructor(private readonly service: CarrerasService) {}
+  @Post() create(@Body() dto: CreateCarreraDto) {
+    return this.service.create(dto);
   }
-
+  @ApiOperation({ security: [] })
+  @Publico()
   @Get()
-  findAll() {
-    return this.carrerasService.findAll();
+  findAll(@Query() query: ListadoDto) {
+    return this.service.findAll(query);
   }
-
+  @ApiOperation({ security: [] })
+  @Publico()
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.carrerasService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findOne(id);
   }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCarreraDto: UpdateCarreraDto) {
-    return this.carrerasService.update(+id, updateCarreraDto);
+  @Patch(':id') update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCarreraDto,
+  ) {
+    return this.service.update(id, dto);
   }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.carrerasService.remove(+id);
+  @Delete(':id') remove(@Param('id', ParseIntPipe) id: number) {
+    return this.service.remove(id);
   }
 }
