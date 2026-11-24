@@ -1,20 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { InscripcionesController } from './inscripciones.controller.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import { InscripcionesService } from './inscripciones.service.js';
-
 describe('InscripcionesController', () => {
-  let controller: InscripcionesController;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+  it('se resuelve con sus dependencias explícitas', async () => {
+    const module = await Test.createTestingModule({
       controllers: [InscripcionesController],
-      providers: [InscripcionesService],
+      providers: [
+        InscripcionesService,
+        { provide: PrismaService, useValue: {} },
+      ],
     }).compile();
-
-    controller = module.get<InscripcionesController>(InscripcionesController);
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+    expect(module.get(InscripcionesController)).toBeDefined();
   });
 });

@@ -1,1 +1,1 @@
-export class Inscripcione {}
+export type { PeriodoInscripcion as Inscripcione } from '../../../generated/prisma/client.js';
