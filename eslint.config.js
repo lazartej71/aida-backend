@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig(
   {
-    ignores: ['dist/**', 'coverage/**'],
+    ignores: ['dist/**', 'coverage/**', 'src/generated/**', '.tmp/**'],
   },
   {
     files: ['**/*.ts'],
@@ -18,6 +18,10 @@ export default defineConfig(
       },
     },
     rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'error',
     },

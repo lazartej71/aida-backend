@@ -1,0 +1,195 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Los CHECK y RLS se conservan en el SQL de la migración inicial.
+model Documento {
+  id                  Int                  @id @default(autoincrement())
+  titulo              String               @db.VarChar(200)
+  tipo                String               @db.VarChar(20)
+  numero              String?              @db.VarChar(30)
+  url                 String?
+  vigenteDesde        DateTime?            @map("vigente_desde") @db.Date
+  vigenteHasta        DateTime?            @map("vigente_hasta") @db.Date
+  creadoEn            DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
+  mesasExamen         MesaExamen[]
+  periodosInscripcion PeriodoInscripcion[]
+  eventosAcademicos   EventoAcademico[]
+  tramites            Tramite[]
+  preguntasFrecuentes PreguntaFrecuente[]
+  mensajes            Mensaje[]
+
+  @@map("documentos")
+}
+
+model Carrera {
+  id            Int       @id @default(autoincrement())
+  nombre        String    @unique @db.VarChar(120)
+  tipo          String    @db.VarChar(10)
+  duracionAnios Int?      @map("duracion_anios") @db.SmallInt
+  plan          String?   @db.VarChar(20)
+  activa        Boolean   @default(true)
+  creadoEn      DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  materias      Materia[]
+
+  @@map("carreras")
+}
+
+model Materia {
+  id               Int              @id @default(autoincrement())
+  carreraId        Int              @map("carrera_id")
+  codigo           Int              @db.SmallInt
+  nombre           String           @db.VarChar(120)
+  nivel            Int              @db.SmallInt
+  esElectiva       Boolean          @default(false) @map("es_electiva")
+  creadoEn         DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+  carrera          Carrera          @relation(fields: [carreraId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  correlatividades Correlatividad[] @relation("MateriaObjetivo")
+  requeridaPor     Correlatividad[] @relation("MateriaRequerida")
+  mesasExamen      MesaExamen[]
+
+  @@unique([carreraId, codigo], map: "materias_codigo_unico")
+  @@unique([carreraId, nombre], map: "materias_nombre_unico")
+  @@index([carreraId], map: "materias_carrera_idx")
+  @@map("materias")
+}
+
+model Correlatividad {
+  materiaId  Int     @map("materia_id")
+  requiereId Int     @map("requiere_id")
+  para       String  @db.VarChar(10)
+  condicion  String  @db.VarChar(10)
+  materia    Materia @relation("MateriaObjetivo", fields: [materiaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  requiere   Materia @relation("MateriaRequerida", fields: [requiereId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@id([materiaId, requiereId, para])
+  @@map("correlatividades")
+}
+
+model MesaExamen {
+  id                Int        @id @default(autoincrement())
+  materiaId         Int        @map("materia_id")
+  turno             Int        @db.SmallInt
+  llamado           String     @db.VarChar(3)
+  fecha             DateTime   @db.Date
+  cierreInscripcion DateTime   @map("cierre_inscripcion") @db.Date
+  documentoId       Int?       @map("documento_id")
+  materia           Materia    @relation(fields: [materiaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  documento         Documento? @relation(fields: [documentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@unique([materiaId, turno, llamado, fecha], map: "mesas_examen_unica")
+  @@index([materiaId], map: "mesas_examen_materia_idx")
+  @@map("mesas_examen")
+}
+
+model PeriodoInscripcion {
+  id          Int        @id @default(autoincrement())
+  descripcion String     @db.VarChar(200)
+  tipo        String     @db.VarChar(10)
+  nivel       Int?       @db.SmallInt
+  fechaDesde  DateTime   @map("fecha_desde") @db.Date
+  fechaHasta  DateTime   @map("fecha_hasta") @db.Date
+  documentoId Int?       @map("documento_id")
+  documento   Documento? @relation(fields: [documentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@map("periodos_inscripcion")
+}
+
+model EventoAcademico {
+  id          Int        @id @default(autoincrement())
+  titulo      String     @db.VarChar(200)
+  tipo        String     @db.VarChar(15)
+  fechaDesde  DateTime   @map("fecha_desde") @db.Date
+  fechaHasta  DateTime?  @map("fecha_hasta") @db.Date
+  documentoId Int?       @map("documento_id")
+  documento   Documento? @relation(fields: [documentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@map("eventos_academicos")
+}
+
+model InfoIngreso {
+  id               Int       @id @default(autoincrement())
+  titulo           String    @db.VarChar(200)
+  descripcion      String
+  modalidad        String?   @db.VarChar(15)
+  inscripcionDesde DateTime? @map("inscripcion_desde") @db.Date
+  inscripcionHasta DateTime? @map("inscripcion_hasta") @db.Date
+
+  @@map("info_ingreso")
+}
+
+model Tramite {
+  id          Int        @id @default(autoincrement())
+  nombre      String     @unique @db.VarChar(150)
+  descripcion String
+  oficina     String?    @db.VarChar(100)
+  plazoDesde  DateTime?  @map("plazo_desde") @db.Date
+  plazoHasta  DateTime?  @map("plazo_hasta") @db.Date
+  documentoId Int?       @map("documento_id")
+  documento   Documento? @relation(fields: [documentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@map("tramites")
+}
+
+model PreguntaFrecuente {
+  id          Int        @id @default(autoincrement())
+  pregunta    String     @unique @db.VarChar(300)
+  respuesta   String
+  categoria   String     @db.VarChar(50)
+  documentoId Int?       @map("documento_id")
+  documento   Documento? @relation(fields: [documentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@map("preguntas_frecuentes")
+}
+
+model Conversacion {
+  id           Int          @id @default(autoincrement())
+  canal        String       @db.VarChar(10)
+  estado       String       @default("ABIERTA") @db.VarChar(10)
+  iniciadaEn   DateTime     @default(now()) @map("iniciada_en") @db.Timestamptz(6)
+  mensajes     Mensaje[]
+  derivaciones Derivacion[]
+
+  @@map("conversaciones")
+}
+
+model Mensaje {
+  id             Int          @id @default(autoincrement())
+  conversacionId Int          @map("conversacion_id")
+  rol            String       @db.VarChar(12)
+  texto          String
+  documentoId    Int?         @map("documento_id")
+  enviadoEn      DateTime     @default(now()) @map("enviado_en") @db.Timestamptz(6)
+  conversacion   Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  documento      Documento?   @relation(fields: [documentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([conversacionId], map: "mensajes_conversacion_idx")
+  @@map("mensajes")
+}
+
+model Derivacion {
+  id             Int          @id @default(autoincrement())
+  conversacionId Int          @map("conversacion_id")
+  motivo         String
+  prioridad      String       @default("MEDIA") @db.VarChar(5)
+  estado         String       @default("PENDIENTE") @db.VarChar(10)
+  respuesta      String?
+  creadaEn       DateTime     @default(now()) @map("creada_en") @db.Timestamptz(6)
+  resueltaEn     DateTime?    @map("resuelta_en") @db.Timestamptz(6)
+  conversacion   Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([conversacionId], map: "derivaciones_conversacion_idx")
+  @@map("derivaciones")
+}
