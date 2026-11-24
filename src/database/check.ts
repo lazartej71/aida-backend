@@ -14,6 +14,11 @@ const tablas = [
   'conversaciones',
   'mensajes',
   'derivaciones',
+  'usuarios',
+  'versiones_documento',
+  'fragmentos_documento',
+  'consultas_asistente',
+  'eventos_canal',
 ];
 
 async function verificar() {
@@ -34,6 +39,11 @@ async function verificar() {
       prisma.conversacion.count(),
       prisma.mensaje.count(),
       prisma.derivacion.count(),
+      prisma.usuario.count(),
+      prisma.versionDocumento.count(),
+      prisma.fragmentoDocumento.count(),
+      prisma.consultaAsistente.count(),
+      prisma.eventoCanal.count(),
     ]);
     console.log('Conexión con Prisma y PostgreSQL correcta.');
     console.table(tablas.map((tabla, i) => ({ tabla, registros: conteos[i] })));

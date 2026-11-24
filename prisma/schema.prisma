@@ -14,6 +14,20 @@ datasource db {
   provider = "postgresql"
 }
 
+model Usuario {
+  id            Int      @id @default(autoincrement())
+  nombre        String   @db.VarChar(80)
+  email         String   @unique @db.VarChar(254)
+  passwordHash  String   @map("password_hash") @db.VarChar(60)
+  creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  rol           String   @default("ESTUDIANTE") @db.VarChar(12)
+  activo        Boolean  @default(true)
+  tokenVersion  Int      @default(0) @map("token_version")
+
+  @@map("usuarios")
+}
+
 // Los CHECK y RLS se conservan en el SQL de la migración inicial.
 model Documento {
   id                  Int                  @id @default(autoincrement())
@@ -30,6 +44,8 @@ model Documento {
   tramites            Tramite[]
   preguntasFrecuentes PreguntaFrecuente[]
   mensajes            Mensaje[]
+  versionActual       Int                  @default(0) @map("version_actual")
+  versiones           VersionDocumento[]
 
   @@map("documentos")
 }
@@ -155,12 +171,15 @@ model PreguntaFrecuente {
 }
 
 model Conversacion {
-  id           Int          @id @default(autoincrement())
-  canal        String       @db.VarChar(10)
-  estado       String       @default("ABIERTA") @db.VarChar(10)
-  iniciadaEn   DateTime     @default(now()) @map("iniciada_en") @db.Timestamptz(6)
+  id           Int                 @id @default(autoincrement())
+  canal        String              @db.VarChar(10)
+  estado       String              @default("ABIERTA") @db.VarChar(10)
+  iniciadaEn   DateTime            @default(now()) @map("iniciada_en") @db.Timestamptz(6)
   mensajes     Mensaje[]
   derivaciones Derivacion[]
+  accesoHash   String?             @map("acceso_hash") @db.VarChar(64)
+  consultas    ConsultaAsistente[]
+  eventosCanal EventoCanal[]
 
   @@map("conversaciones")
 }
@@ -172,6 +191,7 @@ model Mensaje {
   texto          String
   documentoId    Int?         @map("documento_id")
   enviadoEn      DateTime     @default(now()) @map("enviado_en") @db.Timestamptz(6)
+  fuentes        Json?
   conversacion   Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   documento      Documento?   @relation(fields: [documentoId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
@@ -192,4 +212,60 @@ model Derivacion {
 
   @@index([conversacionId], map: "derivaciones_conversacion_idx")
   @@map("derivaciones")
+}
+
+model VersionDocumento {
+  id          Int                  @id @default(autoincrement())
+  documentoId Int                  @map("documento_id")
+  numero      Int
+  contenido   String
+  creadoEn    DateTime             @default(now()) @map("creado_en") @db.Timestamptz(6)
+  documento   Documento            @relation(fields: [documentoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  fragmentos  FragmentoDocumento[]
+
+  @@unique([documentoId, numero])
+  @@map("versiones_documento")
+}
+
+model FragmentoDocumento {
+  id        Int              @id @default(autoincrement())
+  versionId Int              @map("version_id")
+  orden     Int
+  contenido String
+  version   VersionDocumento @relation(fields: [versionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([versionId, orden])
+  @@map("fragmentos_documento")
+}
+
+model ConsultaAsistente {
+  id              Int          @id @default(autoincrement())
+  conversacionId  Int          @map("conversacion_id")
+  consulta        String       @db.VarChar(2000)
+  estrategia      String       @db.VarChar(30)
+  proveedor       String       @db.VarChar(30)
+  duracionMs      Int          @map("duracion_ms")
+  cantidadFuentes Int          @map("cantidad_fuentes")
+  tokensEntrada   Int?         @map("tokens_entrada")
+  tokensSalida    Int?         @map("tokens_salida")
+  creadoEn        DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
+  conversacion    Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([creadoEn])
+  @@index([estrategia])
+  @@map("consultas_asistente")
+}
+
+model EventoCanal {
+  id             String        @id @db.VarChar(200)
+  remitenteHash  String        @map("remitente_hash") @db.VarChar(64)
+  conversacionId Int?          @map("conversacion_id")
+  respuesta      String?
+  estado         String        @default("RECIBIDO") @db.VarChar(20)
+  creadoEn       DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn  DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  conversacion   Conversacion? @relation(fields: [conversacionId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([remitenteHash])
+  @@map("eventos_canal")
 }

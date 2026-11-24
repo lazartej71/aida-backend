@@ -38,7 +38,11 @@ export function crearPool(
 ): pg.Pool {
   return new pg.Pool({
     connectionString: obtenerDatabaseUrl(connectionString),
-    max: 5,
+    max:
+      Number(process.env.DATABASE_POOL_MAX ?? 5) >= 1 &&
+      Number(process.env.DATABASE_POOL_MAX ?? 5) <= 20
+        ? Number(process.env.DATABASE_POOL_MAX ?? 5)
+        : 5,
     connectionTimeoutMillis: 10000,
     idleTimeoutMillis: 30000,
     statement_timeout: 10000,
