@@ -1,1 +1,1 @@
-export class Materia {}
+export type { Materia } from '../../../generated/prisma/client.js';

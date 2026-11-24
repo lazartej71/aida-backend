@@ -1,18 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { TramitesService } from './tramites.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 describe('TramitesService', () => {
-  let service: TramitesService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [TramitesService],
+  it('se resuelve con sus dependencias explícitas', async () => {
+    const module = await Test.createTestingModule({
+      providers: [TramitesService, { provide: PrismaService, useValue: {} }],
     }).compile();
-
-    service = module.get<TramitesService>(TramitesService);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+    expect(module.get(TramitesService)).toBeDefined();
   });
 });
