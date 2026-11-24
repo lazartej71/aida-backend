@@ -340,13 +340,18 @@ export class DatosExactosService {
     if (!todos.length) return { tema: 'tramites', evidencias: [] };
     // Palabras de la consulta además de "trámite": si las hay, se busca ese trámite puntual
     const especificas = terminos(consulta).filter((t) => t !== 'tramite');
-    const elegidos = especificas.length
-      ? todos.filter(
-          (t) =>
-            similitud(especificas.join(' '), `${t.nombre} ${t.descripcion}`) >=
-            0.5,
-        )
-      : [];
+    // Si la consulta nombra un trámite, se muestran solo los que mejor coinciden
+    const puntajes = todos.map((t) => ({
+      t,
+      puntaje: especificas.length
+        ? similitud(especificas.join(' '), `${t.nombre} ${t.descripcion}`)
+        : 0,
+    }));
+    const mejor = Math.max(...puntajes.map((p) => p.puntaje));
+    const elegidos =
+      mejor >= 0.5
+        ? puntajes.filter((p) => p.puntaje === mejor).map((p) => p.t)
+        : [];
     const lista = elegidos.length ? elegidos : todos;
     const estado = (t: (typeof todos)[number]) => {
       if (!t.plazoHasta) return 'Sin plazo fijo.';

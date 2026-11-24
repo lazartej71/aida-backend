@@ -83,12 +83,19 @@ export class RecuperacionDocumentalService {
         })),
       );
     }
+    // Orden: primero las que contienen más palabras de la consulta. Si empatan, gana
+    // la que tiene un título más parecido a la consulta (por ejemplo, entre "¿Qué
+    // electivas hay?" y "¿Cuántas horas de electivas…?", para "qué electivas hay")
     return evidencias
-      .map((e) => ({ e, score: similitud(consulta, `${e.titulo} ${e.texto}`) }))
+      .map((e) => ({
+        e,
+        score: similitud(consulta, `${e.titulo} ${e.texto}`),
+        titulo: similitud(e.titulo, consulta),
+      }))
       .filter(
         (x) => x.score >= 0.5 && (entrada.length < 2 ? x.score === 1 : true),
       )
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => b.score - a.score || b.titulo - a.titulo)
       .slice(0, 5)
       .map((x) => x.e);
   }
