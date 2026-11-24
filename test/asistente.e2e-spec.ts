@@ -85,6 +85,22 @@ describe('Asistente: conversación, datos exactos y abstención', () => {
         },
       ],
     });
+    // Calendario de licenciaturas y tecnicaturas: mismas fechas, otro cierre de inscripción
+    const tecnicaturas = await prisma.documento.create({
+      data: {
+        titulo: 'Calendario de prueba - Licenciaturas y Tecnicaturas',
+        tipo: 'RESOLUCION',
+        numero: '2/2035',
+      },
+    });
+    await prisma.eventoAcademico.create({
+      data: {
+        titulo: '1° turno · Mesa I (cierre de inscripción: 09/05/2035)',
+        tipo: 'EXAMENES',
+        fechaDesde: new Date('2035-05-14'),
+        documentoId: tecnicaturas.id,
+      },
+    });
     await prisma.tramite.create({
       data: {
         nombre: 'Cambio de plan',
@@ -150,6 +166,15 @@ describe('Asistente: conversación, datos exactos y abstención', () => {
     );
     expect(res.body.respuesta).toContain('14/05/2035');
     expect(res.body.respuesta).not.toContain('primer nivel');
+  });
+
+  it('separa los turnos por calendario y, con una materia, muestra solo el de su carrera', async () => {
+    const general = await preguntar('¿Cuándo son las próximas mesas?');
+    expect(general.body.respuesta).toContain('Carreras de grado:');
+    expect(general.body.respuesta).toContain('Licenciaturas y tecnicaturas:');
+    const deGrado = await preguntar('mesas de Física I');
+    expect(deGrado.body.respuesta).toContain('10/05/2035');
+    expect(deGrado.body.respuesta).not.toContain('09/05/2035');
   });
 
   it('filtra las mesas por el mes nombrado en la consulta', async () => {

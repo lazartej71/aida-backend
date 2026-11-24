@@ -138,7 +138,7 @@ export class DatosExactosService {
   // si no, se usa la similitud de palabras. Ante un empate no elige ninguna
   private async materiaMencionada(consulta: string, texto: string) {
     const materias = await this.prisma.materia.findMany({
-      include: { carrera: { select: { nombre: true } } },
+      include: { carrera: { select: { nombre: true, tipo: true } } },
     });
     const candidatas = materias
       .map((m) => ({
@@ -225,17 +225,40 @@ export class DatosExactosService {
         };
     }
 
+    // Turnos generales del calendario. Hay dos calendarios oficiales con cierres de
+    // inscripción distintos: carreras de grado y licenciaturas/tecnicaturas.
+    // Si se nombró una materia, solo se muestra el de su tipo de carrera
+    const grupoDe = (titulo: string) =>
+      /licenciatura|tecnicatura/i.test(titulo)
+        ? 'Licenciaturas y tecnicaturas'
+        : 'Carreras de grado';
+    const grupoDeLaMateria = materia
+      ? materia.carrera.tipo === 'GRADO'
+        ? 'Carreras de grado'
+        : 'Licenciaturas y tecnicaturas'
+      : null;
     const turnos = (
       await this.prisma.eventoAcademico.findMany({
         where: { tipo: 'EXAMENES', fechaDesde: { gte: hoy } },
         include: { documento: true },
         orderBy: { fechaDesde: 'asc' },
       })
-    )
-      .filter((e) => vigente(e) && enElMes(e.fechaDesde))
-      .slice(0, 3);
+    ).filter(
+      (e) =>
+        vigente(e) &&
+        enElMes(e.fechaDesde) &&
+        (!grupoDeLaMateria ||
+          grupoDe(e.documento?.titulo ?? '') === grupoDeLaMateria),
+    );
     if (!turnos.length) return { tema: 'mesas', evidencias: [] };
 
+    // Las tres próximas mesas de cada calendario
+    const grupos = new Map<string, typeof turnos>();
+    for (const t of turnos) {
+      const grupo = grupoDe(t.documento?.titulo ?? '');
+      const lista = grupos.get(grupo) ?? [];
+      if (lista.length < 3) grupos.set(grupo, [...lista, t]);
+    }
     const aclaracionMateria = materia
       ? `No hay una mesa específica cargada para ${materia.nombre}: se rinde en los turnos generales.\n`
       : '';
@@ -243,15 +266,21 @@ export class DatosExactosService {
       mes === null
         ? 'Próximas mesas de examen (valen para todas las materias):'
         : `Mesas de examen de ${nombreDelMes(mes)} (valen para todas las materias):`;
+    const detalle = [...grupos]
+      .map(
+        ([grupo, lista]) =>
+          `${grupos.size > 1 ? `${grupo}:\n` : ''}${lista
+            .map((t) => `${formatearFecha(t.fechaDesde)}: ${t.titulo}.`)
+            .join('\n')}`,
+      )
+      .join('\n\n');
     return {
       tema: 'mesas',
       evidencias: [
         {
           id: 'turnos-examen',
           titulo: 'Turnos de exámenes finales — Calendario académico',
-          texto: `${aclaracionMateria}${encabezado}\n${turnos
-            .map((t) => `${formatearFecha(t.fechaDesde)}: ${t.titulo}.`)
-            .join('\n')}`,
+          texto: `${aclaracionMateria}${encabezado}\n${detalle}`,
           ...respaldo(turnos[0]),
         },
       ],
