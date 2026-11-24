@@ -219,11 +219,64 @@ Cada tabla tiene clave primaria `id` (salvo `correlatividades`, que usa una clav
 ### Datos iniciales
 Cada tabla tiene al menos 5 registros. Los datos institucionales salen del sitio oficial de la UTN FRT: el Calendario Académico 2026 (Resolución 2394/2025), el plan de estudio de Ingeniería en Sistemas de Información 2023 y el Seminario de Ingreso 2027. Las conversaciones, mensajes y derivaciones son de ejemplo.
 
-### Cómo crearla
+### SQL original (antes del TP11)
 En Supabase, desde el **SQL Editor**, ejecutar en este orden:
 1. `src/database/migrations/001_crear_tablas.sql`
 2. `src/database/seeds/001_datos_iniciales.sql`
 3. `src/database/verificacion.sql`, para comprobar que cada tabla tenga sus registros, que las relaciones sean correctas y que no haya datos huérfanos. Al final del archivo hay pruebas de restricciones que tienen que fallar.
+
+Estos archivos se conservan como evidencia de la etapa anterior. **No volver a ejecutar `001_crear_tablas.sql` sobre la base actual: contiene `DROP TABLE`.** Desde el TP11, los cambios se administran con Prisma Migrate.
+
+### TP11: NestJS, Prisma 7 y PostgreSQL
+
+Se sigue la configuración del [repositorio de la profesora](https://github.com/georginacostilla/Back-repoPrueba-AlumnosProgramacionIV-/tree/e9033c1d6970432cc48e75230e8c9b8ab20f150f): `prisma7.config.ts`, generador `prisma-client` con salida en `src/generated/prisma`, `PrismaService` y `PrismaModule`. Se agregó cierre de conexiones y configuración TLS compartida para Supabase.
+
+- `prisma` es la herramienta de terminal para validar, generar el cliente y administrar migraciones.
+- `@prisma/client` es la biblioteca utilizada por el cliente generado para consultar y modificar registros desde TypeScript.
+- `@prisma/adapter-pg` conecta Prisma 7 con PostgreSQL mediante el controlador `pg`.
+
+La inicialización se realizó con `npx prisma init --datasource-provider postgresql --output ../src/generated/prisma`. El esquema contiene los 13 modelos de AIda con campos en camelCase y `@map`/`@@map` para respetar los nombres SQL existentes. Los valores permitidos siguen siendo `VARCHAR` con `CHECK`, como en la base original; no se convierten en enums nativos de PostgreSQL.
+
+```bash
+npm install
+npm run prisma:validate
+npm run prisma:generate
+npm run db:check
+```
+
+`npm install` y `npm run build` generan automáticamente Prisma Client. El código generado no se versiona. `PrismaModule` es global y exporta `PrismaService`: se conecta al iniciar NestJS y se desconecta al cerrar la aplicación. Los tests de rutas sustituyen ese proveedor para ejecutarse sin acceder a Supabase; `db:check` verifica la conexión real.
+
+### Migración inicial con las tablas que ya existen
+
+La base de Supabase se creó y cargó mediante SQL antes de incorporar Prisma. Por eso se preparó `prisma/migrations/0_init/migration.sql` como **baseline**: representa el estado inicial, conserva claves, índices y restricciones `CHECK`, y activa RLS en las 13 tablas. No incluye borrados ni los datos de ejemplo.
+
+Una vez comprobados el certificado SSL y la conexión:
+
+```bash
+npm run db:check
+npm run prisma:baseline
+npm run prisma:status
+```
+
+`prisma:baseline` primero compara la estructura de la base con `schema.prisma` usando `prisma migrate diff`. Solo si coincide registra `0_init` con `prisma migrate resolve --applied 0_init`. Esto escribe el historial de Prisma sin volver a crear las tablas. La comparación no cubre funciones como `CHECK` y RLS: se conservan explícitamente en el SQL inicial y deben revisarse con la verificación SQL y la salida RLS de `db:check`. Referencia: [baselining de Prisma](https://www.prisma.io/docs/orm/v7/prisma-migrate/workflows/baselining).
+
+Para crear una base nueva y vacía usando la migración preparada, usar `npm run prisma:deploy` y después cargar el seed SQL si se necesitan los ejemplos. No usar `prisma:baseline` en una base vacía.
+
+El comando del enunciado, `npx prisma migrate dev --name init`, corresponde a generar la migración en una **base de desarrollo vacía**. En la base actual se reemplaza por el baseline para conservar los datos. Los cambios posteriores se generan en una base de desarrollo con `npm run prisma:migrate -- --name nombre_del_cambio`. `migrate dev` necesita una base auxiliar (*shadow database*); configurar `SHADOW_DATABASE_URL` si el usuario no tiene permiso para crearla, usando una base distinta y descartable. No apuntarla al proyecto actual ni aceptar un reset de los datos cargados.
+
+### Comprobar la conexión desde el backend
+
+En el panel **Conectar** de Supabase, copiar la cadena PostgreSQL de **Session pooler** al valor de `DATABASE_URL` en `.env`. Reemplazar el marcador de contraseña por la contraseña de la base; si tiene caracteres especiales, codificarlos para una URL. No usar la URL HTTPS de la API ni una clave de Supabase como contraseña.
+
+```bash
+npm run db:check
+```
+
+Este comando compila y realiza consultas de lectura: comprueba la conexión, cuenta los registros de las 13 tablas y muestra si RLS está activado. No crea ni borra datos y no imprime credenciales. En Supabase se usa TLS con verificación de certificado.
+
+Si aparece `SELF_SIGNED_CERT_IN_CHAIN`, descargar el certificado raíz desde **Database Settings → SSL Configuration → Download Certificate** de Supabase y guardarlo como `prod-supabase.cer` en la raíz del backend. Se detecta automáticamente. También se puede indicar otra ubicación con `DATABASE_SSL_CA` en `.env`. Volver a ejecutar `npm run db:check` después de descargarlo.
+
+`db:check` usa Prisma Client para contar los registros y consultar el estado de RLS. Los CRUD existentes todavía devuelven respuestas de ejemplo; conectarlos a los modelos queda fuera del alcance de este TP de configuración. Por ejemplo, un servicio podrá inyectar `PrismaService` y consultar `this.prisma.carrera.findMany()`. Postman sigue siendo la herramienta para probar las rutas HTTP de NestJS. RLS protege el acceso mediante la API de Supabase, pero una conexión con el usuario `postgres` puede omitirlo: la autorización de las rutas debe implementarse en NestJS antes de exponer datos.
 
 ## Flujo de trabajo
 Cada tarea se hace en su propia rama, se abre un PR a `dev` y, una vez revisado, un PR de `dev` a `main`, la rama estable.

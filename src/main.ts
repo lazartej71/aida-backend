@@ -9,6 +9,7 @@ async function bootstrap() {
 
   // Todas las solicitudes se validan con su DTO antes de llegar al controlador
   app.useGlobalPipes(crearValidacion());
+  app.enableShutdownHooks();
 
   await app.listen(process.env.PORT ?? 3000);
 }
