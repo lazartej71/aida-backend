@@ -15,12 +15,20 @@ import { PreguntasFrecuentesModule } from '../preguntas-frecuentes/preguntas-fre
 import { TramitesModule } from '../tramites/tramites.module.js';
 import { UsuariosModule } from '../usuarios/usuarios.module.js';
 import { PrismaModule } from '../prisma/prisma.module.js';
+import { AuthModule } from '../auth/auth.module.js';
+import { MetricasModule } from '../metricas/metricas.module.js';
+import { CanalesModule } from '../canales/canales.module.js';
+import { APP_FILTER } from '@nestjs/core';
+import { ErroresFilter } from '../../common/filters/errores.filter.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
   imports: [
     PrismaModule,
+    AuthModule,
+    MetricasModule,
+    CanalesModule,
     CalendarioAcademicoModule,
     CarrerasModule,
     ChatModule,
@@ -44,6 +52,6 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_FILTER, useClass: ErroresFilter }],
 })
 export class AppModule {}
