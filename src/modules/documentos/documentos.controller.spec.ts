@@ -1,20 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { DocumentosController } from './documentos.controller.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import { DocumentosService } from './documentos.service.js';
-
 describe('DocumentosController', () => {
-  let controller: DocumentosController;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+  it('se resuelve con sus dependencias explícitas', async () => {
+    const module = await Test.createTestingModule({
       controllers: [DocumentosController],
-      providers: [DocumentosService],
+      providers: [DocumentosService, { provide: PrismaService, useValue: {} }],
     }).compile();
-
-    controller = module.get<DocumentosController>(DocumentosController);
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+    expect(module.get(DocumentosController)).toBeDefined();
   });
 });
