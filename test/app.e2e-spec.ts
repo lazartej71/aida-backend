@@ -4,6 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { crearValidacion } from './../src/common/pipes/validacion.pipe.js';
 import { AppModule } from './../src/modules/app/app.module.js';
+import { PrismaService } from './../src/modules/prisma/prisma.service.js';
 
 // Cuerpos válidos para crear un registro de cada recurso
 const cuerposValidos: Record<string, object> = {
@@ -69,7 +70,11 @@ describe('API REST (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      // Estos tests verifican rutas y DTO; la conexión real se prueba con db:check.
+      .overrideProvider(PrismaService)
+      .useValue({})
+      .compile();
 
     app = moduleFixture.createNestApplication();
     // La misma validación que usa main.ts

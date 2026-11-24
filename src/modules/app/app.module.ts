@@ -14,11 +14,13 @@ import { MesasExamenModule } from '../mesas-examen/mesas-examen.module.js';
 import { PreguntasFrecuentesModule } from '../preguntas-frecuentes/preguntas-frecuentes.module.js';
 import { TramitesModule } from '../tramites/tramites.module.js';
 import { UsuariosModule } from '../usuarios/usuarios.module.js';
+import { PrismaModule } from '../prisma/prisma.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
   imports: [
+    PrismaModule,
     CalendarioAcademicoModule,
     CarrerasModule,
     ChatModule,
