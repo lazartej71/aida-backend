@@ -1,20 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { PreguntasFrecuentesController } from './preguntas-frecuentes.controller.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 import { PreguntasFrecuentesService } from './preguntas-frecuentes.service.js';
-
 describe('PreguntasFrecuentesController', () => {
-  let controller: PreguntasFrecuentesController;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+  it('se resuelve con sus dependencias explícitas', async () => {
+    const module = await Test.createTestingModule({
       controllers: [PreguntasFrecuentesController],
-      providers: [PreguntasFrecuentesService],
+      providers: [
+        PreguntasFrecuentesService,
+        { provide: PrismaService, useValue: {} },
+      ],
     }).compile();
-
-    controller = module.get<PreguntasFrecuentesController>(PreguntasFrecuentesController);
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+    expect(module.get(PreguntasFrecuentesController)).toBeDefined();
   });
 });
