@@ -113,4 +113,4 @@ La colección [AIda-backend.postman_collection.json](postman/AIda-backend.postma
 
 ## Flujo de trabajo
 
-Cada funcionalidad se desarrolla en una rama, se revisa mediante PR hacia `dev` y luego se integra a `main`. El código de esta ampliación se encuentra en `feature/completar-backend` hasta su revisión y publicación.
+Cada funcionalidad se desarrolla en una rama, se revisa mediante PR hacia `dev` y luego se integra a `main`. El código de esta ampliación se encuentra en `feature/integracion-modulos` hasta su revisión y publicación.
