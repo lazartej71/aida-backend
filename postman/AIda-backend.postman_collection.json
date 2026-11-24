@@ -1,81 +1,65 @@
 {
   "info": {
     "name": "AIda - Backend",
-    "description": "Pedidos para probar la API de AIda, el Asistente Institucional De Alumnos de la UTN FRT. La variable baseUrl apunta al servidor local; se cambia en la pestaña Variables de la colección.",
+    "description": "API completa. La carpeta Backend completo crea datos temporales y elimina únicamente los registros que acaba de crear. Requiere credenciales de un administrador en un entorno de desarrollo. No ejecuta resets ni usa ids fijos de los datos institucionales.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:3000"
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "authEmail",
+      "value": ""
+    },
+    {
+      "key": "authPassword",
+      "value": "PruebaTP12!2026"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
     }
   ],
   "item": [
     {
-      "name": "App",
+      "name": "Autenticación (TP12)",
+      "description": "Ejecutar la carpeta completa con Collection Runner en este orden. El registro genera un correo nuevo; login guarda el JWT en accessToken. No exportar variables con tokens reales. Los usuarios creados manualmente quedan en la base.",
       "item": [
         {
-          "name": "Estado del servidor",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                ""
-              ]
+          "name": "01 - Registrar usuario (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('authEmail', 'tp12-' + pm.variables.replaceIn('{{$guid}}') + '@example.invalid');",
+                  "pm.collectionVariables.set('accessToken', '');"
+                ]
+              }
             },
-            "description": "Responde \"Hello World!\" si el servidor está funcionando."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Carreras",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/carreras",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "carreras"
-              ]
-            },
-            "description": "Devuelve todos los registros de carreras."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/carreras/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "carreras",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });",
+                  "pm.test('Devuelve usuario público', () => { const user = pm.response.json(); pm.expect(user.id).to.be.a('number'); pm.expect(user.email).to.eql(pm.variables.get('authEmail').trim().toLowerCase()); pm.collectionVariables.set('authUserId', user.id); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -85,123 +69,40 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/carreras",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "carreras"
-              ]
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Tecnicatura Universitaria en Programación\",\n  \"tipo\": \"PREGRADO\",\n  \"activa\": true\n}",
+              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 201."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/carreras/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "carreras",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"activa\": false\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "02 - Iniciar sesión (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });",
+                  "const loginBody = pm.response.json();",
+                  "pm.test('Devuelve JWT', () => { pm.expect(loginBody.access_token).to.be.a('string'); pm.expect(loginBody.access_token.split('.')).to.have.lengthOf(3); pm.collectionVariables.set('accessToken', loginBody.access_token); });",
+                  "pm.test('JWT identifica al usuario y vence en una hora', () => { const payload = JSON.parse(atob(loginBody.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); pm.expect(payload.sub).to.eql(loginBody.user.id); pm.expect(payload.email).to.eql(loginBody.user.email); pm.expect(payload.exp - payload.iat).to.eql(3600); pm.expect(payload).not.to.have.property('passwordHash'); });"
+                ]
               }
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/carreras/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "carreras",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Materias",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/materias",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "materias"
-              ]
-            },
-            "description": "Devuelve todos los registros de materias."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/materias/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "materias",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -211,123 +112,37 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/materias",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "materias"
-              ]
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"carreraId\": 1,\n  \"codigo\": 24,\n  \"nombre\": \"Inteligencia Artificial\",\n  \"nivel\": 5,\n  \"esElectiva\": false\n}",
+              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 200."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/materias/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "materias",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nivel\": 4\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "03 - Rechazar correo duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                ]
               }
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/materias/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "materias",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Mesas de examen",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/mesas-examen",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "mesas-examen"
-              ]
-            },
-            "description": "Devuelve todos los registros de mesas de examen."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/mesas-examen/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "mesas-examen",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -337,123 +152,38 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/mesas-examen",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "mesas-examen"
-              ]
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"materiaId\": 6,\n  \"turno\": 7,\n  \"llamado\": \"I\",\n  \"fecha\": \"2026-12-14\",\n  \"cierreInscripcion\": \"2026-12-10\"\n}",
+              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 409."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/mesas-examen/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "mesas-examen",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"llamado\": \"II\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "04 - Rechazar contraseña incorrecta (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });",
+                  "pm.test('No entrega token', () => pm.expect(pm.response.json()).not.to.have.property('access_token'));"
+                ]
               }
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/mesas-examen/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "mesas-examen",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Inscripciones",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/inscripciones",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inscripciones"
-              ]
-            },
-            "description": "Devuelve todos los registros de inscripciones."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/inscripciones/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inscripciones",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -463,123 +193,37 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/inscripciones",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inscripciones"
-              ]
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"descripcion\": \"Inscripción a las asignaturas del 2° cuatrimestre\",\n  \"tipo\": \"CURSADO\",\n  \"fechaDesde\": \"2026-08-10\",\n  \"fechaHasta\": \"2026-08-14\"\n}",
+              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"IncorrectaTP12!2026\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 401."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/inscripciones/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inscripciones",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fechaHasta\": \"2026-08-15\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "05 - Rechazar usuario inexistente (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                ]
               }
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/inscripciones/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inscripciones",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Calendario académico",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/calendario-academico",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "calendario-academico"
-              ]
-            },
-            "description": "Devuelve todos los registros de calendario académico."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/calendario-academico/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "calendario-academico",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -589,123 +233,37 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/calendario-academico",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "calendario-academico"
-              ]
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Receso académico de invierno\",\n  \"tipo\": \"RECESO\",\n  \"fechaDesde\": \"2026-07-13\",\n  \"fechaHasta\": \"2026-07-24\"\n}",
+              "raw": "{\n  \"email\": \"inexistente-tp12@example.invalid\",\n  \"password\": \"{{authPassword}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 401."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/calendario-academico/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "calendario-academico",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Receso de invierno\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "06 - Validar correo (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                ]
               }
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/calendario-academico/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "calendario-academico",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Ingreso",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/ingreso",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "ingreso"
-              ]
-            },
-            "description": "Devuelve todos los registros de ingreso."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/ingreso/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "ingreso",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -715,123 +273,37 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/ingreso",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "ingreso"
-              ]
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Prueba de Suficiencia Diciembre 2026\",\n  \"descripcion\": \"Matemática y Física.\",\n  \"modalidad\": \"LIBRE\",\n  \"inscripcionDesde\": \"2026-12-11\",\n  \"inscripcionHasta\": \"2026-12-17\"\n}",
+              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"correo-invalido\",\n  \"password\": \"{{authPassword}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 400."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/ingreso/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "ingreso",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"modalidad\": \"PRESENCIAL\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "07 - Validar contraseña corta (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                ]
               }
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/ingreso/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "ingreso",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Trámites",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/tramites",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tramites"
-              ]
-            },
-            "description": "Devuelve todos los registros de trámites."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/tramites/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tramites",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -841,123 +313,37 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/tramites",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tramites"
-              ]
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cambio de plan\",\n  \"descripcion\": \"Presentación de notas para pasar a otro plan de estudios.\",\n  \"plazoDesde\": \"2026-04-06\",\n  \"plazoHasta\": \"2026-04-17\"\n}",
+              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"corta\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 400."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/tramites/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tramites",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"oficina\": \"Departamento Alumnos\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "08 - Rechazar campos adicionales (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                ]
               }
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/tramites/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tramites",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Documentos",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/documentos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documentos"
-              ]
-            },
-            "description": "Devuelve todos los registros de documentos."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/documentos/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documentos",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -967,123 +353,37 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/documentos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documentos"
-              ]
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Calendario Académico 2026 - Carreras de grado\",\n  \"tipo\": \"RESOLUCION\",\n  \"numero\": \"2394/2025\"\n}",
+              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\",\n  \"rol\": \"ADMIN\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 400."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/documentos/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documentos",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"vigenteHasta\": \"2027-03-31\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "09 - Validar contraseña ausente (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                ]
               }
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/documentos/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documentos",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Preguntas frecuentes",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/preguntas-frecuentes",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "preguntas-frecuentes"
-              ]
-            },
-            "description": "Devuelve todos los registros de preguntas frecuentes."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/preguntas-frecuentes/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "preguntas-frecuentes",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -1093,375 +393,37 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/preguntas-frecuentes",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "preguntas-frecuentes"
-              ]
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"pregunta\": \"¿Dónde queda la facultad?\",\n  \"respuesta\": \"En Rivadavia 1050, San Miguel de Tucumán.\",\n  \"categoria\": \"Institucional\"\n}",
+              "raw": "{\n  \"email\": \"{{authEmail}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 400."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/preguntas-frecuentes/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "preguntas-frecuentes",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"categoria\": \"Contacto\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "10 - Evitar registro duplicado por otra ruta (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                ]
               }
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/preguntas-frecuentes/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "preguntas-frecuentes",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Chat",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/chat",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "chat"
-              ]
-            },
-            "description": "Devuelve todos los registros de chat."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/chat/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "chat",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/chat",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "chat"
-              ]
-            },
-            "description": "Crea un registro. Responde con estado 201.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"canal\": \"WEB\",\n  \"mensaje\": \"¿Cuándo empiezan las clases?\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/chat/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "chat",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"estado\": \"CERRADA\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/chat/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "chat",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Derivaciones",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/derivaciones",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "derivaciones"
-              ]
-            },
-            "description": "Devuelve todos los registros de derivaciones."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/derivaciones/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "derivaciones",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/derivaciones",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "derivaciones"
-              ]
-            },
-            "description": "Crea un registro. Responde con estado 201.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"conversacionId\": 1,\n  \"motivo\": \"Sin información oficial sobre el costo del seminario\",\n  \"prioridad\": \"ALTA\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/derivaciones/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "derivaciones",
-                "1"
-              ]
-            },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"estado\": \"EN_CURSO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/derivaciones/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "derivaciones",
-                "1"
-              ]
-            },
-            "description": "Elimina el registro con id 1."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Usuarios",
-      "item": [
-        {
-          "name": "Listar",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/usuarios",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "usuarios"
-              ]
-            },
-            "description": "Devuelve todos los registros de usuarios."
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar por id",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/usuarios/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "usuarios",
-                "1"
-              ]
-            },
-            "description": "Devuelve el registro con id 1."
-          },
-          "response": []
-        },
-        {
-          "name": "Crear",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -1472,30 +434,38 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/usuarios",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "usuarios"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios"]
             },
-            "description": "Crea un registro. Responde con estado 201.",
             "body": {
               "mode": "raw",
-              "raw": "{}",
+              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "TP12. Respuesta esperada: 404."
           },
           "response": []
         },
         {
-          "name": "Actualizar",
+          "name": "11 - Evitar truncamiento bcrypt de UTF-8 (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                ]
+              }
+            }
+          ],
           "request": {
-            "method": "PATCH",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
@@ -1503,76 +473,85 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/usuarios/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "usuarios",
-                "1"
-              ]
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
             },
-            "description": "Actualiza solo los campos enviados del registro con id 1.",
             "body": {
               "mode": "raw",
-              "raw": "{}",
+              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"ááááááááááááááááááááááááááááááááááááá\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/usuarios/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "usuarios",
-                "1"
-              ]
             },
-            "description": "Elimina el registro con id 1."
+            "description": "TP12. Respuesta esperada: 400."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Validaciones (errores esperados)",
-      "description": "Cada pedido manda un dato incorrecto. La respuesta esperada es 400 con el mensaje indicado.",
+      "name": "Backend completo",
+      "description": "Ejecutar toda la carpeta en orden. Configurar adminEmail y adminPassword en un entorno local, no en el archivo versionado.",
       "item": [
         {
-          "name": "Falta un campo obligatorio",
+          "name": "01 - Iniciar sesión del administrador",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ejecucionTP=pm.variables.replaceIn('{{$guid}}');pm.collectionVariables.set('runId',ejecucionTP);pm.collectionVariables.set('correoPrueba','backend-'+ejecucionTP+'@example.invalid');",
+                  "pm.collectionVariables.unset('adminToken');",
+                  "pm.collectionVariables.unset('userToken');",
+                  "pm.collectionVariables.unset('usuarioId');",
+                  "pm.collectionVariables.unset('documentoId');",
+                  "pm.collectionVariables.unset('carreraId');",
+                  "pm.collectionVariables.unset('materiaId');",
+                  "pm.collectionVariables.unset('materia2Id');",
+                  "pm.collectionVariables.unset('mesaId');",
+                  "pm.collectionVariables.unset('periodoId');",
+                  "pm.collectionVariables.unset('eventoId');",
+                  "pm.collectionVariables.unset('ingresoId');",
+                  "pm.collectionVariables.unset('tramiteId');",
+                  "pm.collectionVariables.unset('faqId');",
+                  "pm.collectionVariables.unset('chatId');",
+                  "pm.collectionVariables.unset('chatDocumentoId');",
+                  "pm.collectionVariables.unset('chatToken');",
+                  "pm.collectionVariables.unset('derivacionId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Entrega un JWT',function(){var cuerpoTP=pm.response.json();pm.expect(cuerpoTP.access_token).to.be.a('string');pm.collectionVariables.set('adminToken',cuerpoTP.access_token);});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/carreras",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "carreras"
-              ]
-            },
-            "description": "Respuesta esperada: 400 con el mensaje \"El nombre es obligatorio.\".",
+            "url": "{{baseUrl}}/auth/login",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tipo\": \"GRADO\"\n}",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1583,28 +562,35 @@
           "response": []
         },
         {
-          "name": "Texto donde se espera un número",
+          "name": "02 - Registrar alumno de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('usuarioId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/materias",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "materias"
-              ]
-            },
-            "description": "Respuesta esperada: 400 con el mensaje \"El nivel debe ser un número entero.\".",
+            "url": "{{baseUrl}}/auth/register",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"carreraId\": 1,\n  \"codigo\": 24,\n  \"nombre\": \"Inteligencia Artificial\",\n  \"nivel\": \"cinco\"\n}",
+              "raw": "{\n  \"nombre\": \"Alumno de prueba {{runId}}\",\n  \"email\": \"{{correoPrueba}}\",\n  \"password\": \"PruebaBackend!2026\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1615,28 +601,35 @@
           "response": []
         },
         {
-          "name": "Valor distinto de true o false",
+          "name": "03 - Iniciar sesión del alumno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Entrega un JWT',function(){var cuerpoTP=pm.response.json();pm.expect(cuerpoTP.access_token).to.be.a('string');pm.collectionVariables.set('userToken',cuerpoTP.access_token);});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/carreras",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "carreras"
-              ]
-            },
-            "description": "Respuesta esperada: 400 con el mensaje \"El campo activa debe ser true o false.\".",
+            "url": "{{baseUrl}}/auth/login",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Ingeniería Química\",\n  \"tipo\": \"GRADO\",\n  \"activa\": \"si\"\n}",
+              "raw": "{\n  \"email\": \"{{correoPrueba}}\",\n  \"password\": \"PruebaBackend!2026\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1647,28 +640,65 @@
           "response": []
         },
         {
-          "name": "Valor fuera de la lista permitida",
+          "name": "04 - Consultar perfil propio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "05 - Impedir escritura anónima",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function(){pm.response.to.have.status(401);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/mesas-examen",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "mesas-examen"
-              ]
-            },
-            "description": "Respuesta esperada: 400 con el mensaje \"El llamado debe ser I, II o III.\".",
+            "url": "{{baseUrl}}/carreras",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"materiaId\": 6,\n  \"turno\": 7,\n  \"llamado\": \"IV\",\n  \"fecha\": \"2026-12-14\",\n  \"cierreInscripcion\": \"2026-12-10\"\n}",
+              "raw": "{\n  \"nombre\": \"No debe crearse\",\n  \"tipo\": \"GRADO\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1679,28 +709,41 @@
           "response": []
         },
         {
-          "name": "Fecha con formato incorrecto",
+          "name": "06 - Impedir escritura del alumno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function(){pm.response.to.have.status(403);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/inscripciones",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "inscripciones"
-              ]
-            },
-            "description": "Respuesta esperada: 400 con el mensaje \"La fecha de inicio debe tener el formato AAAA-MM-DD.\".",
+            "url": "{{baseUrl}}/carreras",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"descripcion\": \"Inscripción a las asignaturas del 2° cuatrimestre\",\n  \"tipo\": \"CURSADO\",\n  \"fechaDesde\": \"10/08/2026\",\n  \"fechaHasta\": \"2026-08-14\"\n}",
+              "raw": "{\n  \"nombre\": \"No debe crearse\",\n  \"tipo\": \"GRADO\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1711,28 +754,73 @@
           "response": []
         },
         {
-          "name": "URL inválida",
+          "name": "07 - Impedir acceso del alumno a usuarios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function(){pm.response.to.have.status(403);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/usuarios"
+          },
+          "response": []
+        },
+        {
+          "name": "Crear documentos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('documentoId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/documentos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documentos"
-              ]
-            },
-            "description": "Respuesta esperada: 400 con el mensaje \"La URL debe ser una dirección web válida (http o https).\".",
+            "url": "{{baseUrl}}/documentos",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Calendario Académico 2026\",\n  \"tipo\": \"RESOLUCION\",\n  \"url\": \"frt.utn\"\n}",
+              "raw": "{\n  \"titulo\": \"Documento {{runId}}\",\n  \"tipo\": \"RESOLUCION\",\n  \"url\": \"https://example.invalid/fuente\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1743,61 +831,91 @@
           "response": []
         },
         {
-          "name": "Campo que el DTO no declara",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/tramites",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tramites"
-              ]
-            },
-            "description": "Respuesta esperada: 400 con el mensaje \"property costo should not exist\".",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cambio de plan\",\n  \"descripcion\": \"Presentación de notas.\",\n  \"costo\": 100\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
+          "name": "Consultar documentos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('documentoId')));});"
+                ]
               }
             }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}"
           },
           "response": []
         },
         {
-          "name": "Actualización con un valor inválido",
+          "name": "Listar documentos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/documentos?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar documentos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/chat/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "chat",
-                "1"
-              ]
-            },
-            "description": "Respuesta esperada: 400 con el mensaje \"El estado debe ser ABIERTA o CERRADA.\".",
+            "url": "{{baseUrl}}/documentos/{{documentoId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estado\": \"PAUSADA\"\n}",
+              "raw": "{\n  \"titulo\": \"Documento actualizado {{runId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1808,26 +926,1731 @@
           "response": []
         },
         {
-          "name": "Resolver una derivación sin respuesta",
+          "name": "Crear carreras",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('carreraId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
           "request": {
-            "method": "PATCH",
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/derivaciones/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "derivaciones",
-                "1"
+            "url": "{{baseUrl}}/carreras",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carrera {{runId}}\",\n  \"tipo\": \"PREGRADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar carreras",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('carreraId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/carreras/{{carreraId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar carreras",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/carreras?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar carreras",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
               ]
             },
-            "description": "Respuesta esperada: 400 con el mensaje \"Para resolver la derivación hay que enviar la respuesta.\".",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/carreras/{{carreraId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carrera actualizada {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear materias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('materiaId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carreraId\": {{carreraId}},\n  \"codigo\": 32000,\n  \"nombre\": \"Materia {{runId}}\",\n  \"nivel\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar materias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('materiaId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar materias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/materias?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar materias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Materia actualizada {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear mesas-examen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('mesaId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/mesas-examen",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materiaId\": {{materiaId}},\n  \"turno\": 1,\n  \"llamado\": \"I\",\n  \"fecha\": \"2035-12-15\",\n  \"cierreInscripcion\": \"2035-12-10\",\n  \"documentoId\": {{documentoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar mesas-examen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('mesaId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/mesas-examen/{{mesaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar mesas-examen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/mesas-examen?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar mesas-examen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/mesas-examen/{{mesaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"turno\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear inscripciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('periodoId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Periodo {{runId}}\",\n  \"tipo\": \"CURSADO\",\n  \"fechaDesde\": \"2035-02-01\",\n  \"fechaHasta\": \"2035-02-28\",\n  \"documentoId\": {{documentoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar inscripciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('periodoId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/{{periodoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar inscripciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar inscripciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones/{{periodoId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Periodo actualizado {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear calendario-academico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('eventoId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/calendario-academico",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Evento {{runId}}\",\n  \"tipo\": \"CLASES\",\n  \"fechaDesde\": \"2035-03-01\",\n  \"documentoId\": {{documentoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar calendario-academico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('eventoId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/calendario-academico/{{eventoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar calendario-academico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/calendario-academico?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar calendario-academico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/calendario-academico/{{eventoId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Evento actualizado {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear ingreso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('ingresoId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ingreso",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Ingreso {{runId}}\",\n  \"descripcion\": \"Datos de prueba para ingresantes\",\n  \"modalidad\": \"PRESENCIAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar ingreso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('ingresoId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/ingreso/{{ingresoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar ingreso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/ingreso?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar ingreso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ingreso/{{ingresoId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Ingreso actualizado {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear tramites",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('tramiteId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/tramites",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Tramite {{runId}}\",\n  \"descripcion\": \"Datos de prueba administrativa\",\n  \"documentoId\": {{documentoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar tramites",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('tramiteId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/tramites/{{tramiteId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar tramites",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/tramites?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar tramites",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/tramites/{{tramiteId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Tramite actualizado {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear preguntas-frecuentes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('faqId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/preguntas-frecuentes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pregunta\": \"Pregunta {{runId}}\",\n  \"respuesta\": \"Respuesta de prueba\",\n  \"categoria\": \"Prueba\",\n  \"documentoId\": {{documentoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar preguntas-frecuentes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('faqId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/preguntas-frecuentes/{{faqId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar preguntas-frecuentes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/preguntas-frecuentes?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar preguntas-frecuentes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/preguntas-frecuentes/{{faqId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"respuesta\": \"Respuesta actualizada de prueba\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear segunda materia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('materia2Id',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carreraId\": {{carreraId}},\n  \"codigo\": 32001,\n  \"nombre\": \"Segunda materia {{runId}}\",\n  \"nivel\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Guardar correlatividad",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materia2Id}}/correlatividades",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requiereId\": {{materiaId}},\n  \"para\": \"CURSAR\",\n  \"condicion\": \"APROBADA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar correlatividades",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materia2Id}}/correlatividades"
+          },
+          "response": []
+        },
+        {
+          "name": "Rechazar ciclo de correlatividades",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function(){pm.response.to.have.status(400);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/materias/{{materiaId}}/correlatividades",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requiereId\": {{materia2Id}},\n  \"para\": \"CURSAR\",\n  \"condicion\": \"REGULAR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rechazar fecha de cierre inválida",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function(){pm.response.to.have.status(400);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/mesas-examen/{{mesaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cierreInscripcion\": \"2035-12-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Indexar primera versión",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}/contenido",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"El protocolo orbital verificacion {{runId}} requiere presentar formulario azul.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Indexar segunda versión",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}/contenido",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"El protocolo orbital verificacion {{runId}} requiere presentar formulario verde.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar versiones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Conserva ambas versiones',function(){pm.expect(pm.response.json()).to.have.lengthOf(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}/versiones"
+          },
+          "response": []
+        },
+        {
+          "name": "Leer versión anterior",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Conserva contenido anterior',function(){pm.expect(pm.response.json().contenido).to.include('azul');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}/versiones/1"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar documento desde el chat",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Responde con la última versión y fuente',function(){var cuerpoTP=pm.response.json();pm.expect(cuerpoTP.estrategia).to.eql('RECUPERACION_DOCUMENTAL');pm.expect(cuerpoTP.respuesta).to.include('verde');pm.expect(cuerpoTP.fuentes[0].documentoId).to.eql(Number(pm.variables.get('documentoId')));});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('chatDocumentoId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canal\": \"WEB\",\n  \"mensaje\": \"protocolo orbital verificacion {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crear conversación con datos exactos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Entrega token privado y respuesta respaldada',function(){var cuerpoTP=pm.response.json();pm.expect(cuerpoTP.estrategia).to.eql('DATOS_EXACTOS');pm.expect(cuerpoTP.tokenConversacion).to.be.a('string');pm.collectionVariables.set('chatToken',cuerpoTP.tokenConversacion);});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('chatId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canal\": \"WEB\",\n  \"mensaje\": \"Qué carreras hay\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Impedir acceso al chat ajeno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function(){pm.response.to.have.status(403);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/chat/{{chatId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Leer conversación propia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "x-conversacion-token",
+                "value": "{{chatToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/chat/{{chatId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Derivar una pregunta sin respaldo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Se abstiene y deriva',function(){pm.expect(pm.response.json().estrategia).to.eql('ABSTENCION');pm.expect(pm.response.json().derivada).to.eql(true);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-conversacion-token",
+                "value": "{{chatToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/chat/{{chatId}}/mensajes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mensaje\": \"Zeppelines intergalacticos nanomotores desconocidos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar derivación de la conversación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Existe derivación pendiente',function(){var derivacionesTP=pm.response.json().derivaciones;pm.expect(derivacionesTP.length).to.be.above(0);pm.collectionVariables.set('derivacionId',derivacionesTP[0].id);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "x-conversacion-token",
+                "value": "{{chatToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/chat/{{chatId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Rechazar resolución incompleta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function(){pm.response.to.have.status(400);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/derivaciones/{{derivacionId}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"estado\": \"RESUELTA\"\n}",
@@ -1837,6 +2660,929 @@
                 }
               }
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolver derivación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Registra la resolución',function(){pm.expect(pm.response.json().resueltaEn).to.be.a('string');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/derivaciones/{{derivacionId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"RESUELTA\",\n  \"respuesta\": \"Respuesta del personal de prueba\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar métricas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Métricas provienen de consultas registradas',function(){pm.expect(pm.response.json().rendimiento._count._all).to.be.above(0);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/metricas/resumen?dias=30"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar estado del asistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/asistente/estado"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar estado de los canales",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/canales/estado"
+          },
+          "response": []
+        },
+        {
+          "name": "Cerrar conversación propia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "x-conversacion-token",
+                "value": "{{chatToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/chat/{{chatId}}/cerrar"
+          },
+          "response": []
+        },
+        {
+          "name": "Rechazar mensajes después del cierre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function(){pm.response.to.have.status(400);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-conversacion-token",
+                "value": "{{chatToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/chat/{{chatId}}/mensajes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mensaje\": \"hola\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cerrar sesión del alumno",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout"
+          },
+          "response": []
+        },
+        {
+          "name": "Rechazar JWT revocado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function(){pm.response.to.have.status(401);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar correlatividad creada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materia2Id}}/correlatividades/{{materiaId}}/CURSAR"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar conversación de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/chat/{{chatId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar conversación documental de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/chat/{{chatDocumentoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar preguntas-frecuentes de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/preguntas-frecuentes/{{faqId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar eliminación de preguntas-frecuentes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function(){pm.response.to.have.status(404);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/preguntas-frecuentes/{{faqId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar tramites de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/tramites/{{tramiteId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar eliminación de tramites",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function(){pm.response.to.have.status(404);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/tramites/{{tramiteId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar ingreso de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/ingreso/{{ingresoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar eliminación de ingreso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function(){pm.response.to.have.status(404);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/ingreso/{{ingresoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar calendario-academico de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/calendario-academico/{{eventoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar eliminación de calendario-academico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function(){pm.response.to.have.status(404);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/calendario-academico/{{eventoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar inscripciones de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/{{periodoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar eliminación de inscripciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function(){pm.response.to.have.status(404);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/{{periodoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar mesas-examen de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/mesas-examen/{{mesaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar eliminación de mesas-examen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function(){pm.response.to.have.status(404);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/mesas-examen/{{mesaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar segunda materia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materia2Id}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar materias de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar eliminación de materias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function(){pm.response.to.have.status(404);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar carreras de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/carreras/{{carreraId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar eliminación de carreras",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function(){pm.response.to.have.status(404);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/carreras/{{carreraId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar documentos de prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar eliminación de documentos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function(){pm.response.to.have.status(404);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar alumno creado por la colección",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/usuarios/{{usuarioId}}"
           },
           "response": []
         }
