@@ -43,6 +43,8 @@ export class MetricasService {
       { consulta: string; cantidad: number; sinRespuesta: number }
     >();
     for (const c of consultas) {
+      // Los saludos y agradecimientos no son consultas: no cuentan como frecuentes
+      if (c.estrategia === 'CONVERSACION') continue;
       const clave = normalizar(c.consulta);
       const dato = frecuencia.get(clave) ?? {
         consulta: c.consulta,
