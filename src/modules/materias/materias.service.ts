@@ -92,12 +92,7 @@ export class MateriasService {
     const where = {
       ...(query.busqueda
         ? {
-            OR: ['nombre'].map((campo) => ({
-              [campo]: {
-                contains: query.busqueda,
-                mode: 'insensitive' as const,
-              },
-            })),
+            nombre: { contains: query.busqueda, mode: 'insensitive' as const },
           }
         : {}),
       ...(query.carreraId !== undefined ? { carreraId: query.carreraId } : {}),
@@ -123,9 +118,9 @@ export class MateriasService {
     return dato;
   }
   async update(id: number, dto: UpdateMateriaDto) {
-    const actual = await this.findOne(id);
+    // Si el registro no existe, findOne responde 404 antes de intentar actualizar
+    await this.findOne(id);
     const datos = limpiarDatos(dto);
-    void actual;
     return operacion(() =>
       this.prisma.materia.update({ where: { id }, data: datos }),
     );
