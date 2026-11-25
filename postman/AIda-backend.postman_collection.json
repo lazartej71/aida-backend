@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AIda - Backend",
-    "description": "API completa. La carpeta Backend completo crea datos temporales y elimina únicamente los registros que acaba de crear. Requiere credenciales de un administrador en un entorno de desarrollo. No ejecuta resets ni usa ids fijos de los datos institucionales.",
+    "description": "API de AIda ordenada por módulo: una carpeta por recurso con sus pedidos. Ejecutar la colección completa en orden (Collection Runner o Newman) con un entorno que tenga baseUrl, adminEmail y adminPassword: AUTH inicia la sesión del administrador, cada carpeta crea sus datos de prueba y LIMPIEZA los borra al final. Las credenciales nunca se guardan en este archivo.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -23,7 +23,7 @@
     },
     {
       "key": "authPassword",
-      "value": "PruebaTP12!2026"
+      "value": ""
     },
     {
       "key": "accessToken",
@@ -32,472 +32,11 @@
   ],
   "item": [
     {
-      "name": "Autenticación (TP12)",
-      "description": "Ejecutar la carpeta completa con Collection Runner en este orden. El registro genera un correo nuevo; login guarda el JWT en accessToken. No exportar variables con tokens reales. Los usuarios creados manualmente quedan en la base.",
+      "name": "AUTH",
+      "description": "Registro, inicio de sesión, perfil, permisos y cierre de sesión. El primer pedido inicia la sesión del administrador (variables adminEmail y adminPassword del entorno).",
       "item": [
         {
-          "name": "01 - Registrar usuario (201)",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.collectionVariables.set('authEmail', 'tp12-' + pm.variables.replaceIn('{{$guid}}') + '@example.invalid');",
-                  "pm.collectionVariables.set('accessToken', '');"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 201', () => pm.response.to.have.status(201));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });",
-                  "pm.test('Devuelve usuario público', () => { const user = pm.response.json(); pm.expect(user.id).to.be.a('number'); pm.expect(user.email).to.eql(pm.variables.get('authEmail').trim().toLowerCase()); pm.collectionVariables.set('authUserId', user.id); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 201."
-          },
-          "response": []
-        },
-        {
-          "name": "02 - Iniciar sesión (200)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 200', () => pm.response.to.have.status(200));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });",
-                  "const loginBody = pm.response.json();",
-                  "pm.test('Devuelve JWT', () => { pm.expect(loginBody.access_token).to.be.a('string'); pm.expect(loginBody.access_token.split('.')).to.have.lengthOf(3); pm.collectionVariables.set('accessToken', loginBody.access_token); });",
-                  "pm.test('JWT identifica al usuario y vence en una hora', () => { const payload = JSON.parse(atob(loginBody.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); pm.expect(payload.sub).to.eql(loginBody.user.id); pm.expect(payload.email).to.eql(loginBody.user.email); pm.expect(payload.exp - payload.iat).to.eql(3600); pm.expect(payload).not.to.have.property('passwordHash'); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 200."
-          },
-          "response": []
-        },
-        {
-          "name": "03 - Rechazar correo duplicado (409)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 409', () => pm.response.to.have.status(409));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 409."
-          },
-          "response": []
-        },
-        {
-          "name": "04 - Rechazar contraseña incorrecta (401)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 401', () => pm.response.to.have.status(401));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });",
-                  "pm.test('No entrega token', () => pm.expect(pm.response.json()).not.to.have.property('access_token'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"IncorrectaTP12!2026\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 401."
-          },
-          "response": []
-        },
-        {
-          "name": "05 - Rechazar usuario inexistente (401)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 401', () => pm.response.to.have.status(401));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"inexistente-tp12@example.invalid\",\n  \"password\": \"{{authPassword}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 401."
-          },
-          "response": []
-        },
-        {
-          "name": "06 - Validar correo (400)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"correo-invalido\",\n  \"password\": \"{{authPassword}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 400."
-          },
-          "response": []
-        },
-        {
-          "name": "07 - Validar contraseña corta (400)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"corta\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 400."
-          },
-          "response": []
-        },
-        {
-          "name": "08 - Rechazar campos adicionales (400)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\",\n  \"rol\": \"ADMIN\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 400."
-          },
-          "response": []
-        },
-        {
-          "name": "09 - Validar contraseña ausente (400)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{authEmail}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 400."
-          },
-          "response": []
-        },
-        {
-          "name": "10 - Evitar registro duplicado por otra ruta (404)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 404', () => pm.response.to.have.status(404));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/usuarios",
-              "host": ["{{baseUrl}}"],
-              "path": ["usuarios"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 404."
-          },
-          "response": []
-        },
-        {
-          "name": "11 - Evitar truncamiento bcrypt de UTF-8 (400)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
-                  "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"ááááááááááááááááááááááááááááááááááááá\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "description": "TP12. Respuesta esperada: 400."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Backend completo",
-      "description": "Ejecutar toda la carpeta en orden. Configurar adminEmail y adminPassword en un entorno local, no en el archivo versionado.",
-      "item": [
-        {
-          "name": "01 - Iniciar sesión del administrador",
+          "name": "Iniciar sesión del administrador (200)",
           "event": [
             {
               "listen": "prerequest",
@@ -562,7 +101,7 @@
           "response": []
         },
         {
-          "name": "02 - Registrar alumno de prueba",
+          "name": "Registrar alumno de prueba (201)",
           "event": [
             {
               "listen": "test",
@@ -601,7 +140,7 @@
           "response": []
         },
         {
-          "name": "03 - Iniciar sesión del alumno",
+          "name": "Iniciar sesión del alumno (200)",
           "event": [
             {
               "listen": "test",
@@ -640,7 +179,7 @@
           "response": []
         },
         {
-          "name": "04 - Consultar perfil propio",
+          "name": "Consultar perfil propio (200)",
           "event": [
             {
               "listen": "test",
@@ -671,52 +210,650 @@
           "response": []
         },
         {
-          "name": "05 - Impedir escritura anónima",
-          "event": [
+          "name": "VALIDACIONES DE REGISTRO Y LOGIN",
+          "description": "Casos de error del registro y el login: cada uno devuelve el mensaje definido en el DTO.",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 401', function(){pm.response.to.have.status(401);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/carreras",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"No debe crearse\",\n  \"tipo\": \"GRADO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "name": "Registrar usuario (201)",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('authEmail', 'tp12-' + pm.variables.replaceIn('{{$guid}}') + '@example.invalid');",
+                      "pm.collectionVariables.set('accessToken', '');",
+                      "pm.collectionVariables.set('authPassword', 'Aida-' + pm.variables.replaceIn('{{$guid}}').slice(0, 8) + '!');"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 201', () => pm.response.to.have.status(201));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });",
+                      "pm.test('Devuelve usuario público', () => { const user = pm.response.json(); pm.expect(user.id).to.be.a('number'); pm.expect(user.email).to.eql(pm.variables.get('authEmail').trim().toLowerCase()); pm.collectionVariables.set('authUserId', user.id); });"
+                    ]
+                  }
                 }
-              }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 201."
+              },
+              "response": []
+            },
+            {
+              "name": "Iniciar sesión (200)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 200', () => pm.response.to.have.status(200));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });",
+                      "const loginBody = pm.response.json();",
+                      "pm.test('Devuelve JWT', () => { pm.expect(loginBody.access_token).to.be.a('string'); pm.expect(loginBody.access_token.split('.')).to.have.lengthOf(3); pm.collectionVariables.set('accessToken', loginBody.access_token); });",
+                      "pm.test('JWT identifica al usuario y vence en una hora', () => { const payload = JSON.parse(atob(loginBody.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); pm.expect(payload.sub).to.eql(loginBody.user.id); pm.expect(payload.email).to.eql(loginBody.user.email); pm.expect(payload.exp - payload.iat).to.eql(3600); pm.expect(payload).not.to.have.property('passwordHash'); });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 200."
+              },
+              "response": []
+            },
+            {
+              "name": "Rechazar correo duplicado (409)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 409', () => pm.response.to.have.status(409));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 409."
+              },
+              "response": []
+            },
+            {
+              "name": "Rechazar contraseña incorrecta (401)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 401', () => pm.response.to.have.status(401));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });",
+                      "pm.test('No entrega token', () => pm.expect(pm.response.json()).not.to.have.property('access_token'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"IncorrectaTP12!2026\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 401."
+              },
+              "response": []
+            },
+            {
+              "name": "Rechazar usuario inexistente (401)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 401', () => pm.response.to.have.status(401));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"inexistente-tp12@example.invalid\",\n  \"password\": \"{{authPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 401."
+              },
+              "response": []
+            },
+            {
+              "name": "Validar formato del correo (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"correo-invalido\",\n  \"password\": \"{{authPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 400."
+              },
+              "response": []
+            },
+            {
+              "name": "Validar contraseña corta (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"corta\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 400."
+              },
+              "response": []
+            },
+            {
+              "name": "Rechazar campos no permitidos (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\",\n  \"rol\": \"ADMIN\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 400."
+              },
+              "response": []
+            },
+            {
+              "name": "Validar contraseña ausente (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authEmail}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 400."
+              },
+              "response": []
+            },
+            {
+              "name": "Evitar registro por otra ruta (404)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 404', () => pm.response.to.have.status(404));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/usuarios",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "usuarios"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 404."
+              },
+              "response": []
+            },
+            {
+              "name": "Evitar truncamiento de bcrypt (400)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Estado HTTP 400', () => pm.response.to.have.status(400));",
+                      "pm.test('No expone contraseñas ni hashes', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('password'); pm.expect(body).not.to.have.property('passwordHash'); pm.expect(body).not.to.have.property('password_hash'); if (body.user) { pm.expect(body.user).not.to.have.property('passwordHash'); pm.expect(body.user).not.to.have.property('password'); } });"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Usuario de prueba TP12\",\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"ááááááááááááááááááááááááááááááááááááá\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "TP12. Respuesta esperada: 400."
+              },
+              "response": []
             }
-          },
-          "response": []
+          ]
         },
         {
-          "name": "06 - Impedir escritura del alumno",
+          "name": "PERMISOS",
+          "description": "Rutas protegidas: sin token responde 401 y con un rol sin permiso responde 403.",
+          "item": [
+            {
+              "name": "Impedir escritura sin token (401)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP 401', function(){pm.response.to.have.status(401);});",
+                      "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "auth": {
+                  "type": "noauth"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/carreras",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"No debe crearse\",\n  \"tipo\": \"GRADO\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Impedir escritura del alumno (403)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP 403', function(){pm.response.to.have.status(403);});",
+                      "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/carreras",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"No debe crearse\",\n  \"tipo\": \"GRADO\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Impedir al alumno ver usuarios (403)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP 403', function(){pm.response.to.have.status(403);});",
+                      "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "header": [],
+                "url": "{{baseUrl}}/usuarios"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Cerrar sesión del alumno (200)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 403', function(){pm.response.to.have.status(403);});",
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
                   "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
                 ]
               }
@@ -734,34 +871,20 @@
                 }
               ]
             },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/carreras",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"No debe crearse\",\n  \"tipo\": \"GRADO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout"
           },
           "response": []
         },
         {
-          "name": "07 - Impedir acceso del alumno a usuarios",
+          "name": "Rechazar token revocado (401)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 403', function(){pm.response.to.have.status(403);});",
+                  "pm.test('HTTP 401', function(){pm.response.to.have.status(401);});",
                   "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
                 ]
               }
@@ -780,12 +903,162 @@
               ]
             },
             "header": [],
-            "url": "{{baseUrl}}/usuarios"
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "USUARIOS",
+      "description": "Administración de usuarios (solo ADMIN). Las respuestas nunca incluyen la contraseña.",
+      "item": [
+        {
+          "name": "Listar usuarios (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni contraseñas', function(){var t=pm.response.text();pm.expect(t).not.to.include('passwordHash');pm.expect(t).not.to.include('password_hash');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/usuarios?limite=5",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
           },
           "response": []
         },
         {
-          "name": "Crear documentos",
+          "name": "Consultar usuario de prueba (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni contraseñas', function(){var t=pm.response.text();pm.expect(t).not.to.include('passwordHash');pm.expect(t).not.to.include('password_hash');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/usuarios/{{usuarioId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar usuario de prueba (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('Cambió el nombre', function(){pm.expect(pm.response.json().nombre).to.eql('Alumno de prueba actualizado');});",
+                  "pm.test('No expone hashes ni contraseñas', function(){var t=pm.response.text();pm.expect(t).not.to.include('passwordHash');pm.expect(t).not.to.include('password_hash');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/usuarios/{{usuarioId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Alumno de prueba actualizado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rechazar id no numérico (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function(){pm.response.to.have.status(400);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/usuarios/abc",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DOCUMENTOS",
+      "description": "Documentos oficiales que respaldan cada dato, con versiones de su texto.",
+      "item": [
+        {
+          "name": "Crear documento",
           "event": [
             {
               "listen": "test",
@@ -831,31 +1104,6 @@
           "response": []
         },
         {
-          "name": "Consultar documentos",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('documentoId')));});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/documentos/{{documentoId}}"
-          },
-          "response": []
-        },
-        {
           "name": "Listar documentos",
           "event": [
             {
@@ -881,7 +1129,32 @@
           "response": []
         },
         {
-          "name": "Actualizar documentos",
+          "name": "Consultar documento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('documentoId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar documento",
           "event": [
             {
               "listen": "test",
@@ -926,7 +1199,167 @@
           "response": []
         },
         {
-          "name": "Crear carreras",
+          "name": "Cargar texto: primera versión (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}/contenido",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"El protocolo orbital verificacion {{runId}} requiere presentar formulario azul.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cargar texto: segunda versión (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}/contenido",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": \"El protocolo orbital verificacion {{runId}} requiere presentar formulario verde.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar versiones del texto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Conserva ambas versiones',function(){pm.expect(pm.response.json()).to.have.lengthOf(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}/versiones"
+          },
+          "response": []
+        },
+        {
+          "name": "Leer versión anterior",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Conserva contenido anterior',function(){pm.expect(pm.response.json().contenido).to.include('azul');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/documentos/{{documentoId}}/versiones/1"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CARRERAS",
+      "description": "Carreras de la facultad.",
+      "item": [
+        {
+          "name": "Crear carrera",
           "event": [
             {
               "listen": "test",
@@ -972,31 +1405,6 @@
           "response": []
         },
         {
-          "name": "Consultar carreras",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('carreraId')));});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/carreras/{{carreraId}}"
-          },
-          "response": []
-        },
-        {
           "name": "Listar carreras",
           "event": [
             {
@@ -1022,7 +1430,32 @@
           "response": []
         },
         {
-          "name": "Actualizar carreras",
+          "name": "Consultar carrera",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('carreraId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/carreras/{{carreraId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar carrera",
           "event": [
             {
               "listen": "test",
@@ -1067,7 +1500,58 @@
           "response": []
         },
         {
-          "name": "Crear materias",
+          "name": "Rechazar datos inválidos (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function(){pm.response.to.have.status(400);});",
+                  "pm.test('Devuelve los mensajes del DTO', function(){var m=pm.response.json().message;pm.expect(m).to.be.an('array');pm.expect(m.join(' ')).to.include('no está permitido');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/carreras",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"tipo\": \"OTRO\",\n  \"extra\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "MATERIAS",
+      "description": "Materias y sus correlatividades.",
+      "item": [
+        {
+          "name": "Crear materia",
           "event": [
             {
               "listen": "test",
@@ -1113,31 +1597,6 @@
           "response": []
         },
         {
-          "name": "Consultar materias",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('materiaId')));});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/materias/{{materiaId}}"
-          },
-          "response": []
-        },
-        {
           "name": "Listar materias",
           "event": [
             {
@@ -1163,7 +1622,32 @@
           "response": []
         },
         {
-          "name": "Actualizar materias",
+          "name": "Consultar materia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('materiaId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/materias/{{materiaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar materia",
           "event": [
             {
               "listen": "test",
@@ -1198,852 +1682,6 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Materia actualizada {{runId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Crear mesas-examen",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "if(pm.response.code===201){pm.collectionVariables.set('mesaId',pm.response.json().id);}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/mesas-examen",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"materiaId\": {{materiaId}},\n  \"turno\": 1,\n  \"llamado\": \"I\",\n  \"fecha\": \"2035-12-15\",\n  \"cierreInscripcion\": \"2035-12-10\",\n  \"documentoId\": {{documentoId}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar mesas-examen",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('mesaId')));});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/mesas-examen/{{mesaId}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Listar mesas-examen",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/mesas-examen?limite=2"
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar mesas-examen",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/mesas-examen/{{mesaId}}",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"turno\": 2\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Crear inscripciones",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "if(pm.response.code===201){pm.collectionVariables.set('periodoId',pm.response.json().id);}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/inscripciones",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"descripcion\": \"Periodo {{runId}}\",\n  \"tipo\": \"CURSADO\",\n  \"fechaDesde\": \"2035-02-01\",\n  \"fechaHasta\": \"2035-02-28\",\n  \"documentoId\": {{documentoId}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar inscripciones",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('periodoId')));});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/inscripciones/{{periodoId}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Listar inscripciones",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/inscripciones?limite=2"
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar inscripciones",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/inscripciones/{{periodoId}}",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"descripcion\": \"Periodo actualizado {{runId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Crear calendario-academico",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "if(pm.response.code===201){pm.collectionVariables.set('eventoId',pm.response.json().id);}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/calendario-academico",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Evento {{runId}}\",\n  \"tipo\": \"CLASES\",\n  \"fechaDesde\": \"2035-03-01\",\n  \"documentoId\": {{documentoId}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar calendario-academico",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('eventoId')));});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/calendario-academico/{{eventoId}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Listar calendario-academico",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/calendario-academico?limite=2"
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar calendario-academico",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/calendario-academico/{{eventoId}}",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Evento actualizado {{runId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Crear ingreso",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "if(pm.response.code===201){pm.collectionVariables.set('ingresoId',pm.response.json().id);}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/ingreso",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Ingreso {{runId}}\",\n  \"descripcion\": \"Datos de prueba para ingresantes\",\n  \"modalidad\": \"PRESENCIAL\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar ingreso",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('ingresoId')));});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/ingreso/{{ingresoId}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Listar ingreso",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/ingreso?limite=2"
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar ingreso",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/ingreso/{{ingresoId}}",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Ingreso actualizado {{runId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Crear tramites",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "if(pm.response.code===201){pm.collectionVariables.set('tramiteId',pm.response.json().id);}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/tramites",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Tramite {{runId}}\",\n  \"descripcion\": \"Datos de prueba administrativa\",\n  \"documentoId\": {{documentoId}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar tramites",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('tramiteId')));});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/tramites/{{tramiteId}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Listar tramites",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/tramites?limite=2"
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar tramites",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/tramites/{{tramiteId}}",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Tramite actualizado {{runId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Crear preguntas-frecuentes",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "if(pm.response.code===201){pm.collectionVariables.set('faqId',pm.response.json().id);}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/preguntas-frecuentes",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"pregunta\": \"Pregunta {{runId}}\",\n  \"respuesta\": \"Respuesta de prueba\",\n  \"categoria\": \"Prueba\",\n  \"documentoId\": {{documentoId}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar preguntas-frecuentes",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('faqId')));});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/preguntas-frecuentes/{{faqId}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Listar preguntas-frecuentes",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [],
-            "url": "{{baseUrl}}/preguntas-frecuentes?limite=2"
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar preguntas-frecuentes",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{baseUrl}}/preguntas-frecuentes/{{faqId}}",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"respuesta\": \"Respuesta actualizada de prueba\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2169,7 +1807,7 @@
           "response": []
         },
         {
-          "name": "Rechazar ciclo de correlatividades",
+          "name": "Rechazar ciclo de correlatividades (400)",
           "event": [
             {
               "listen": "test",
@@ -2212,9 +1850,156 @@
             }
           },
           "response": []
+        }
+      ]
+    },
+    {
+      "name": "MESAS DE EXAMEN",
+      "description": "Mesas de examen por materia.",
+      "item": [
+        {
+          "name": "Crear mesa de examen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('mesaId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/mesas-examen",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materiaId\": {{materiaId}},\n  \"turno\": 1,\n  \"llamado\": \"I\",\n  \"fecha\": \"2035-12-15\",\n  \"cierreInscripcion\": \"2035-12-10\",\n  \"documentoId\": {{documentoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         },
         {
-          "name": "Rechazar fecha de cierre inválida",
+          "name": "Listar mesas de examen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/mesas-examen?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar mesa de examen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('mesaId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/mesas-examen/{{mesaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar mesa de examen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/mesas-examen/{{mesaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"turno\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rechazar cierre posterior al examen (400)",
           "event": [
             {
               "listen": "test",
@@ -2257,9 +2042,15 @@
             }
           },
           "response": []
-        },
+        }
+      ]
+    },
+    {
+      "name": "INSCRIPCIONES",
+      "description": "Períodos de inscripción.",
+      "item": [
         {
-          "name": "Indexar primera versión",
+          "name": "Crear período de inscripción",
           "event": [
             {
               "listen": "test",
@@ -2267,7 +2058,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('periodoId',pm.response.json().id);}"
                 ]
               }
             }
@@ -2290,10 +2082,10 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{baseUrl}}/documentos/{{documentoId}}/contenido",
+            "url": "{{baseUrl}}/inscripciones",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contenido\": \"El protocolo orbital verificacion {{runId}} requiere presentar formulario azul.\"\n}",
+              "raw": "{\n  \"descripcion\": \"Periodo {{runId}}\",\n  \"tipo\": \"CURSADO\",\n  \"fechaDesde\": \"2035-02-01\",\n  \"fechaHasta\": \"2035-02-28\",\n  \"documentoId\": {{documentoId}}\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2304,7 +2096,108 @@
           "response": []
         },
         {
-          "name": "Indexar segunda versión",
+          "name": "Listar períodos de inscripción",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar período de inscripción",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('periodoId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/inscripciones/{{periodoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar período de inscripción",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/inscripciones/{{periodoId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Periodo actualizado {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CALENDARIO ACADÉMICO",
+      "description": "Eventos del calendario: clases, recesos, turnos de examen y feriados.",
+      "item": [
+        {
+          "name": "Crear evento",
           "event": [
             {
               "listen": "test",
@@ -2312,7 +2205,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('eventoId',pm.response.json().id);}"
                 ]
               }
             }
@@ -2335,10 +2229,10 @@
                 "value": "application/json"
               }
             ],
-            "url": "{{baseUrl}}/documentos/{{documentoId}}/contenido",
+            "url": "{{baseUrl}}/calendario-academico",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contenido\": \"El protocolo orbital verificacion {{runId}} requiere presentar formulario verde.\"\n}",
+              "raw": "{\n  \"titulo\": \"Evento {{runId}}\",\n  \"tipo\": \"CLASES\",\n  \"fechaDesde\": \"2035-03-01\",\n  \"documentoId\": {{documentoId}}\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2349,7 +2243,7 @@
           "response": []
         },
         {
-          "name": "Listar versiones",
+          "name": "Listar eventos",
           "event": [
             {
               "listen": "test",
@@ -2358,13 +2252,62 @@
                 "exec": [
                   "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
                   "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Conserva ambas versiones',function(){pm.expect(pm.response.json()).to.have.lengthOf(2);});"
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
                 ]
               }
             }
           ],
           "request": {
             "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/calendario-academico?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar evento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('eventoId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/calendario-academico/{{eventoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar evento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -2375,28 +2318,48 @@
                 }
               ]
             },
-            "header": [],
-            "url": "{{baseUrl}}/documentos/{{documentoId}}/versiones"
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/calendario-academico/{{eventoId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Evento actualizado {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
-        },
+        }
+      ]
+    },
+    {
+      "name": "INGRESO",
+      "description": "Información del ingreso.",
+      "item": [
         {
-          "name": "Leer versión anterior",
+          "name": "Crear información de ingreso",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
                   "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
-                  "pm.test('Conserva contenido anterior',function(){pm.expect(pm.response.json().contenido).to.include('azul');});"
+                  "if(pm.response.code===201){pm.collectionVariables.set('ingresoId',pm.response.json().id);}"
                 ]
               }
             }
           ],
           "request": {
-            "method": "GET",
+            "method": "POST",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -2407,13 +2370,457 @@
                 }
               ]
             },
-            "header": [],
-            "url": "{{baseUrl}}/documentos/{{documentoId}}/versiones/1"
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ingreso",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Ingreso {{runId}}\",\n  \"descripcion\": \"Datos de prueba para ingresantes\",\n  \"modalidad\": \"PRESENCIAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
         {
-          "name": "Consultar documento desde el chat",
+          "name": "Listar información de ingreso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/ingreso?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar información de ingreso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('ingresoId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/ingreso/{{ingresoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar información de ingreso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ingreso/{{ingresoId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Ingreso actualizado {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TRÁMITES",
+      "description": "Trámites académicos.",
+      "item": [
+        {
+          "name": "Crear trámite",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('tramiteId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/tramites",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Tramite {{runId}}\",\n  \"descripcion\": \"Datos de prueba administrativa\",\n  \"documentoId\": {{documentoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar trámites",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/tramites?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar trámite",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('tramiteId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/tramites/{{tramiteId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar trámite",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/tramites/{{tramiteId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Tramite actualizado {{runId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PREGUNTAS FRECUENTES",
+      "description": "Preguntas frecuentes por categoría.",
+      "item": [
+        {
+          "name": "Crear pregunta frecuente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "if(pm.response.code===201){pm.collectionVariables.set('faqId',pm.response.json().id);}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/preguntas-frecuentes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pregunta\": \"Pregunta {{runId}}\",\n  \"respuesta\": \"Respuesta de prueba\",\n  \"categoria\": \"Prueba\",\n  \"documentoId\": {{documentoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar preguntas frecuentes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Listado paginado',function(){pm.expect(pm.response.json().datos).to.be.an('array');pm.expect(pm.response.json().limite).to.eql(2);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/preguntas-frecuentes?limite=2"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar pregunta frecuente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});",
+                  "pm.test('Identificador persistido',function(){pm.expect(pm.response.json().id).to.eql(Number(pm.variables.get('faqId')));});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": "{{baseUrl}}/preguntas-frecuentes/{{faqId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar pregunta frecuente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/preguntas-frecuentes/{{faqId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"respuesta\": \"Respuesta actualizada de prueba\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CHAT",
+      "description": "Conversaciones con el asistente. Son públicas pero privadas: cada una tiene su token.",
+      "item": [
+        {
+          "name": "Saludar al asistente (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('Responde sin derivar', function(){var b=pm.response.json();pm.expect(b.estrategia).to.eql('CONVERSACION');pm.expect(b.derivada).to.eql(false);pm.collectionVariables.set('chatSaludoId',b.id);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canal\": \"WEB\",\n  \"mensaje\": \"Hola\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Responder con un documento (201)",
           "event": [
             {
               "listen": "test",
@@ -2453,7 +2860,7 @@
           "response": []
         },
         {
-          "name": "Crear conversación con datos exactos",
+          "name": "Responder con datos exactos (201)",
           "event": [
             {
               "listen": "test",
@@ -2493,7 +2900,7 @@
           "response": []
         },
         {
-          "name": "Impedir acceso al chat ajeno",
+          "name": "Impedir leer un chat ajeno (403)",
           "event": [
             {
               "listen": "test",
@@ -2517,7 +2924,7 @@
           "response": []
         },
         {
-          "name": "Leer conversación propia",
+          "name": "Leer la conversación propia (200)",
           "event": [
             {
               "listen": "test",
@@ -2546,7 +2953,7 @@
           "response": []
         },
         {
-          "name": "Derivar una pregunta sin respaldo",
+          "name": "Derivar una pregunta sin respaldo (201)",
           "event": [
             {
               "listen": "test",
@@ -2589,7 +2996,7 @@
           "response": []
         },
         {
-          "name": "Consultar derivación de la conversación",
+          "name": "Ver la derivación en la conversación (200)",
           "event": [
             {
               "listen": "test",
@@ -2619,7 +3026,84 @@
           "response": []
         },
         {
-          "name": "Rechazar resolución incompleta",
+          "name": "Cerrar la conversación (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "x-conversacion-token",
+                "value": "{{chatToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/chat/{{chatId}}/cerrar"
+          },
+          "response": []
+        },
+        {
+          "name": "Rechazar mensajes en un chat cerrado (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function(){pm.response.to.have.status(400);});",
+                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-conversacion-token",
+                "value": "{{chatToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/chat/{{chatId}}/mensajes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mensaje\": \"hola\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DERIVACIONES",
+      "description": "Bandeja del personal: consultas derivadas y su resolución.",
+      "item": [
+        {
+          "name": "Rechazar resolución sin respuesta (400)",
           "event": [
             {
               "listen": "test",
@@ -2664,7 +3148,7 @@
           "response": []
         },
         {
-          "name": "Resolver derivación",
+          "name": "Resolver derivación (200)",
           "event": [
             {
               "listen": "test",
@@ -2708,9 +3192,15 @@
             }
           },
           "response": []
-        },
+        }
+      ]
+    },
+    {
+      "name": "MÉTRICAS Y ESTADO",
+      "description": "Métricas de uso y estado del asistente y de los canales.",
+      "item": [
         {
-          "name": "Consultar métricas",
+          "name": "Consultar métricas (200)",
           "event": [
             {
               "listen": "test",
@@ -2742,7 +3232,7 @@
           "response": []
         },
         {
-          "name": "Consultar estado del asistente",
+          "name": "Estado del asistente (200)",
           "event": [
             {
               "listen": "test",
@@ -2773,7 +3263,7 @@
           "response": []
         },
         {
-          "name": "Consultar estado de los canales",
+          "name": "Estado de los canales (200)",
           "event": [
             {
               "listen": "test",
@@ -2802,142 +3292,15 @@
             "url": "{{baseUrl}}/canales/estado"
           },
           "response": []
-        },
+        }
+      ]
+    },
+    {
+      "name": "LIMPIEZA",
+      "description": "Borra todo lo que creó la colección, en orden inverso, y verifica cada baja. Ejecutar siempre al final.",
+      "item": [
         {
-          "name": "Cerrar conversación propia",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 201', function(){pm.response.to.have.status(201);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [
-              {
-                "key": "x-conversacion-token",
-                "value": "{{chatToken}}"
-              }
-            ],
-            "url": "{{baseUrl}}/chat/{{chatId}}/cerrar"
-          },
-          "response": []
-        },
-        {
-          "name": "Rechazar mensajes después del cierre",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 400', function(){pm.response.to.have.status(400);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "noauth"
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "x-conversacion-token",
-                "value": "{{chatToken}}"
-              }
-            ],
-            "url": "{{baseUrl}}/chat/{{chatId}}/mensajes",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mensaje\": \"hola\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Cerrar sesión del alumno",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{userToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [],
-            "url": "{{baseUrl}}/auth/logout"
-          },
-          "response": []
-        },
-        {
-          "name": "Rechazar JWT revocado",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 401', function(){pm.response.to.have.status(401);});",
-                  "pm.test('No expone hashes ni secretos', function(){var respuestaTP=pm.response.json();pm.expect(respuestaTP).not.to.have.property('passwordHash');pm.expect(respuestaTP).not.to.have.property('accesoHash');if(respuestaTP.user){pm.expect(respuestaTP.user).not.to.have.property('passwordHash');}});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{userToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [],
-            "url": "{{baseUrl}}/auth/me"
-          },
-          "response": []
-        },
-        {
-          "name": "Eliminar correlatividad creada",
+          "name": "Eliminar correlatividad",
           "event": [
             {
               "listen": "test",
@@ -2999,7 +3362,7 @@
           "response": []
         },
         {
-          "name": "Eliminar conversación documental de prueba",
+          "name": "Eliminar conversación documental",
           "event": [
             {
               "listen": "test",
@@ -3026,6 +3389,36 @@
             },
             "header": [],
             "url": "{{baseUrl}}/chat/{{chatDocumentoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar conversación del saludo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/chat/{{chatSaludoId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
           },
           "response": []
         },
@@ -3583,6 +3976,36 @@
             },
             "header": [],
             "url": "{{baseUrl}}/usuarios/{{usuarioId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar usuario de las validaciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function(){pm.response.to.have.status(200);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/usuarios/{{authUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
           },
           "response": []
         }

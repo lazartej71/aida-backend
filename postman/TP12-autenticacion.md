@@ -4,9 +4,9 @@
 2. Aplicar las migraciones con `npm run prisma:deploy` e iniciar NestJS con `npm run start:dev`.
 3. Importar `AIda-backend.postman_collection.json` en Postman.
 4. Revisar `baseUrl` en las variables de la colección; por defecto es `http://localhost:3000`.
-5. Seleccionar **Autenticación (TP12)** y ejecutar todos sus pedidos con **Run folder / Collection Runner**, en el orden indicado.
+5. Seleccionar **AUTH → VALIDACIONES DE REGISTRO Y LOGIN** y ejecutar todos sus pedidos con **Run folder**, en el orden indicado.
 
-El primer pedido genera `authEmail` con un correo nuevo bajo `example.invalid`. `authPassword` contiene una contraseña de prueba reemplazable. Si hay variables de entorno con esos mismos nombres, prevalecen sobre las de la colección: quitarlas si se quiere usar la generación automática.
+El primer pedido genera `authEmail` con un correo nuevo bajo `example.invalid`. `authPassword` también se genera en cada ejecución: la colección no guarda ninguna contraseña. Si hay variables de entorno con esos mismos nombres, prevalecen sobre las de la colección: quitarlas si se quiere usar la generación automática.
 
 | Pedido                                | Estado esperado | Qué comprueba                                     |
 | ------------------------------------- | --------------- | ------------------------------------------------- |
@@ -22,7 +22,7 @@ El primer pedido genera `authEmail` con un correo nuevo bajo `example.invalid`. 
 | 10 — Registro por `/usuarios`         | 404             | Existe una única ruta de registro                 |
 | 11 — Contraseña UTF-8 demasiado larga | 400             | Bcrypt no trunca contraseñas de más de 72 bytes   |
 
-El resultado esperado es **11 pedidos y 26 assertions aprobadas**, sin fallos. El script de login guarda el JWT en la variable `accessToken`; decodificar su contenido permite inspeccionarlo, pero no reemplaza la verificación criptográfica de la firma. Las pruebas HTTP del proyecto también verifican la firma, el rechazo de un token alterado y la normalización del correo.
+El resultado esperado es **11 pedidos y 26 assertions aprobadas**, sin fallos. El script de login guarda el JWT en la variable `accessToken`; decodificar su contenido permite inspeccionarlo, pero no reemplaza la verificación criptográfica de la firma.
 
 Para probar individualmente, usar **Body → raw → JSON**:
 
@@ -36,7 +36,7 @@ Para probar individualmente, usar **Body → raw → JSON**:
 
 Enviar ese cuerpo a `POST {{baseUrl}}/auth/register`. Para `POST {{baseUrl}}/auth/login`, enviar solamente `email` y `password`. No se necesita Authorization en esos dos pedidos.
 
-Las pruebas manuales crean un usuario real y lo conservan en Supabase. Repetir el mismo registro devuelve 409; ejecutar toda la carpeta genera otro correo. No se agregó un endpoint público para borrar usuarios de prueba. Antes de exportar o compartir la colección, vaciar `accessToken` y cualquier credencial real guardada en las variables.
+Ejecutar solo esta carpeta crea un usuario real en la base; al ejecutar la colección completa, la carpeta **LIMPIEZA** lo borra. Repetir el mismo registro devuelve 409. Antes de exportar o compartir la colección, vaciar `accessToken` y cualquier credencial real guardada en las variables.
 
 El backend actual protege los CRUD mediante guards y roles. Las cuentas creadas desde el registro público tienen rol ESTUDIANTE; para las operaciones del personal se necesita una cuenta promovida por un administrador. El alcance original del TP12 se conserva en el historial de trabajos prácticos.
 

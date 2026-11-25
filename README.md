@@ -114,7 +114,7 @@ npm run lint
 
 Por pedido de la cátedra, el proyecto no incluye archivos de pruebas automáticas (`*.spec.ts`): el código queda limpio, solo con lo que usa la aplicación. Además, `nest-cli.json` tiene `generateOptions.spec: false`, así los recursos nuevos que se generen con `nest g` tampoco crean esos archivos. El sistema se verifica compilando, con ESLint y con la colección de Postman, que prueba cada módulo, las validaciones de los DTO y la autenticación.
 
-La colección [AIda-backend.postman_collection.json](postman/AIda-backend.postman_collection.json) incluye la carpeta del TP12 y **Backend completo**, con 90 pedidos y 208 comprobaciones. Ver [la guía del backend en Postman](postman/Backend-completo.md). Los pedidos completos crean sus propios registros y los eliminan al finalizar.
+La colección [AIda-backend.postman_collection.json](postman/AIda-backend.postman_collection.json) tiene una carpeta por módulo (AUTH, USUARIOS, CARRERAS, MATERIAS, MESAS DE EXAMEN, CHAT, DERIVACIONES…) y una carpeta final de LIMPIEZA: 109 pedidos y 248 comprobaciones. Ver [la guía de Postman](postman/README.md).
 
 ## Documentación
 

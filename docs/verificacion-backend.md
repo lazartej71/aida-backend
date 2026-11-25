@@ -6,7 +6,7 @@
 | ----------------------------------------- | ----------------------------------------------- |
 | Compilación y generación de Prisma Client | Correctas                                       |
 | ESLint                                    | Sin errores                                     |
-| Postman contra Supabase                   | 90 pedidos y 208 comprobaciones aprobadas       |
+| Postman contra Supabase                   | 109 pedidos y 248 comprobaciones aprobadas      |
 | Limpieza después de la prueba real        | Conteos originales conservados en las 18 tablas |
 | Migraciones de Supabase                   | Cuatro migraciones aplicadas; esquema al día    |
 | Documento OpenAPI generado                | 47 rutas documentadas                           |

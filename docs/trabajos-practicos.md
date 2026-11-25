@@ -48,7 +48,7 @@ Las reglas de ESLint se configuran en `eslint.config.js`, usando el formato actu
 
 ## Pruebas con Postman
 
-La carpeta `postman/` tiene la colección `AIda-backend.postman_collection.json`, con los pedidos de todas las rutas: una carpeta por recurso con `GET` para listar, `GET /:id`, `POST`, `PATCH` y `DELETE`, y cuerpos JSON de ejemplo. La carpeta **Validaciones (errores esperados)** tiene pedidos con datos incorrectos, cada uno con el error 400 que tiene que devolver.
+La carpeta `postman/` tiene la colección `AIda-backend.postman_collection.json`, con los pedidos de todas las rutas: una carpeta por módulo con títulos en mayúsculas (AUTH, USUARIOS, CARRERAS, MATERIAS…), cada una con `POST`, `GET` para listar, `GET /:id` y `PATCH`, y los casos de error con su código esperado. Las bajas (`DELETE`) están en la carpeta final **LIMPIEZA**. Ver [la guía de Postman](../postman/README.md).
 
 Para usarla:
 
@@ -187,7 +187,7 @@ Cada módulo tiene su `Create...Dto`, con los mismos campos que su tabla en la b
 - Para marcar una derivación como `RESUELTA` hay que enviar la `respuesta`.
 - Desde el TP12, `CreateUsuarioDto` valida `nombre`, `email` y `password` y se reutiliza en el registro de `auth`. No existe un segundo registro en `POST /usuarios`.
 
-**Cómo probarlo:** en Postman, la carpeta **Validaciones (errores esperados)** manda datos incorrectos: un campo obligatorio que falta, texto donde va un número, un valor distinto de `true` o `false`, una fecha con otro formato y un campo que el DTO no declara.
+**Cómo probarlo:** en Postman, la carpeta **AUTH → VALIDACIONES DE REGISTRO Y LOGIN** y el pedido **CARRERAS → Rechazar datos inválidos** mandan datos incorrectos: un campo obligatorio que falta, texto donde va un número, un valor distinto de `true` o `false`, una fecha con otro formato y un campo que el DTO no declara.
 
 ## Base de datos
 
@@ -254,7 +254,7 @@ npm run prisma:generate
 npm run db:check
 ```
 
-`npm install` y `npm run build` generan automáticamente Prisma Client. El código generado no se versiona. `PrismaModule` es global y exporta `PrismaService`: se conecta al iniciar NestJS y se desconecta al cerrar la aplicación. Los tests de rutas sustituyen ese proveedor para ejecutarse sin acceder a Supabase; `db:check` verifica la conexión real.
+`npm install` y `npm run build` generan automáticamente Prisma Client. El código generado no se versiona. `PrismaModule` es global y exporta `PrismaService`: se conecta al iniciar NestJS y se desconecta al cerrar la aplicación. `npm run db:check` verifica la conexión real.
 
 ### Migración inicial con las tablas que ya existen
 
@@ -322,12 +322,12 @@ El JWT se firma con HS256 y vence en una hora. Su contenido incluye `sub` (id de
 
 ### Pruebas en Postman
 
-Importar `postman/AIda-backend.postman_collection.json` y ejecutar la carpeta **Autenticación (TP12)** en orden con **Collection Runner**. Tiene 11 pedidos con pruebas de respuestas correctas, JWT, duplicados, credenciales incorrectas, validaciones y ausencia de la ruta duplicada. El registro genera un correo nuevo y el login guarda el token en `accessToken`. Ver [guía de Postman del TP12](../postman/TP12-autenticacion.md).
+Importar `postman/AIda-backend.postman_collection.json` y ejecutar la carpeta **AUTH** en orden con **Run folder**. Su subcarpeta **VALIDACIONES DE REGISTRO Y LOGIN** tiene los 11 pedidos del TP12. Tiene 11 pedidos con pruebas de respuestas correctas, JWT, duplicados, credenciales incorrectas, validaciones y ausencia de la ruta duplicada. El registro genera un correo nuevo y el login guarda el token en `accessToken`. Ver [guía de Postman del TP12](../postman/TP12-autenticacion.md).
 
 También se puede ejecutar esa carpeta desde una terminal con Newman mientras el servidor está levantado:
 
 ```bash
-npx --yes newman run postman/AIda-backend.postman_collection.json --folder "Autenticación (TP12)"
+npx --yes newman run postman/AIda-backend.postman_collection.json --folder "VALIDACIONES DE REGISTRO Y LOGIN"
 ```
 
 No compartir exportaciones de Postman que incluyan tokens o credenciales reales.
