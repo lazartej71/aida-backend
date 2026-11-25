@@ -14,7 +14,8 @@ import { MesasExamenService } from './mesas-examen.service.js';
 import { CreateMesasExamanDto } from './dto/create-mesas-examan.dto.js';
 import { UpdateMesasExamanDto } from './dto/update-mesas-examan.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 @ApiBearerAuth()
 @ApiTags('mesas-examen')
 @Controller('mesas-examen')

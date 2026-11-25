@@ -14,7 +14,8 @@ import { CalendarioAcademicoService } from './calendario-academico.service.js';
 import { CreateCalendarioAcademicoDto } from './dto/create-calendario-academico.dto.js';
 import { UpdateCalendarioAcademicoDto } from './dto/update-calendario-academico.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 @ApiBearerAuth()
 @ApiTags('calendario-academico')
 @Controller('calendario-academico')

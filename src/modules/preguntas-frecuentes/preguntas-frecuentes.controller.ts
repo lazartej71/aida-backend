@@ -14,7 +14,8 @@ import { PreguntasFrecuentesService } from './preguntas-frecuentes.service.js';
 import { CreatePreguntasFrecuenteDto } from './dto/create-preguntas-frecuente.dto.js';
 import { UpdatePreguntasFrecuenteDto } from './dto/update-preguntas-frecuente.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 @ApiBearerAuth()
 @ApiTags('preguntas-frecuentes')
 @Controller('preguntas-frecuentes')

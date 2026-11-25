@@ -14,7 +14,8 @@ import { CarrerasService } from './carreras.service.js';
 import { CreateCarreraDto } from './dto/create-carrera.dto.js';
 import { UpdateCarreraDto } from './dto/update-carrera.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 @ApiBearerAuth()
 @ApiTags('carreras')
 @Controller('carreras')
