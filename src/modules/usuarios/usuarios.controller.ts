@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service.js';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto.js';
-import { Roles } from '../auth/acceso.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
 
 @ApiBearerAuth()

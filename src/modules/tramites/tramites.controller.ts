@@ -14,7 +14,8 @@ import { TramitesService } from './tramites.service.js';
 import { CreateTramiteDto } from './dto/create-tramite.dto.js';
 import { UpdateTramiteDto } from './dto/update-tramite.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 @ApiBearerAuth()
 @ApiTags('tramites')
 @Controller('tramites')

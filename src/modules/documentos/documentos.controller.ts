@@ -14,7 +14,8 @@ import { DocumentosService } from './documentos.service.js';
 import { CreateDocumentoDto } from './dto/create-documento.dto.js';
 import { UpdateDocumentoDto } from './dto/update-documento.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { ContenidoDocumentoDto } from './dto/contenido-documento.dto.js';
 @ApiBearerAuth()
 @ApiTags('documentos')

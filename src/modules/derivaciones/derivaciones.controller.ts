@@ -13,7 +13,7 @@ import {
 import { DerivacionesService } from './derivaciones.service.js';
 import { CreateDerivacioneDto } from './dto/create-derivacione.dto.js';
 import { UpdateDerivacioneDto } from './dto/update-derivacione.dto.js';
-import { Roles } from '../auth/acceso.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
 
 @ApiBearerAuth()

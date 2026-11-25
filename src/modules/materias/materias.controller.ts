@@ -15,7 +15,8 @@ import { MateriasService } from './materias.service.js';
 import { CreateMateriaDto } from './dto/create-materia.dto.js';
 import { UpdateMateriaDto } from './dto/update-materia.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { CorrelatividadDto } from './dto/correlatividad.dto.js';
 @ApiBearerAuth()
 @ApiTags('materias')

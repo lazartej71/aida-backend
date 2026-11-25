@@ -13,8 +13,8 @@ import {
 import { AuthService } from './auth.service.js';
 import { RegisterAuthDto } from './dto/register-auth.dto.js';
 import { LoginAuthDto } from './dto/login-auth.dto.js';
-import { Publico } from './acceso.decorator.js';
-import type { PeticionAutenticada } from './acceso.guard.js';
+import { Publico } from './decorators/publico.decorator.js';
+import type { PeticionAutenticada } from './interfaces/peticion-autenticada.interface.js';
 import { UsuariosService } from '../usuarios/usuarios.service.js';
 import { CambiarPasswordDto, PerfilDto } from './dto/perfil.dto.js';
 import { hashPassword, verifyPassword } from './password.util.js';
