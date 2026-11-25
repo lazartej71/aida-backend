@@ -62,11 +62,29 @@ El registro público crea cuentas `ESTUDIANTE`. Un administrador puede asignar `
 - El chat web admite consultas sin registro. Devuelve `tokenConversacion`, que se envía después en `x-conversacion-token` para leer, continuar o cerrar esa conversación.
 - Los JWT vencen en una hora. El cierre de sesiones, el cambio de contraseña y los cambios administrativos de la cuenta revocan los tokens anteriores. Cada solicitud protegida comprueba el estado actual de la cuenta.
 
-## Asistente sin proveedores externos
+## Cómo responde el asistente
 
-El modo local funciona con la información almacenada: consulta datos académicos y busca preguntas, trámites y fragmentos de documentos vigentes. Las respuestas incluyen la evidencia utilizada. Si falta respaldo suficiente, registra una derivación para el personal.
+El asistente no tiene respuestas escritas en el código: todo lo que contesta sale de la base de datos y cita el documento oficial que lo respalda. `AsistenteService` prueba cuatro estrategias en orden y se queda con la primera que responde:
 
-Los documentos se indexan mediante `POST /documentos/:id/contenido`, enviando texto institucional. Cada carga crea una versión y mantiene el historial. La recuperación utiliza la última versión y respeta la vigencia del documento.
+| Orden | Estrategia | Qué hace | Archivo |
+|---|---|---|---|
+| 1 | Conversación | Responde saludos, agradecimientos y pedidos de ayuda, y lista lo que sabe responder. No crea derivaciones. | `estrategias/conversacion` |
+| 2 | Datos exactos | Reconoce el tema de la consulta y busca el dato en su tabla: mesas y turnos de examen, correlativas, inscripciones, trámites, suficiencias, calendario, ingreso y carreras. | `estrategias/datos-exactos` |
+| 3 | Recuperación documental | Busca en las preguntas frecuentes y en el texto de los documentos oficiales. Si la consulta es de un tema conocido, solo acepta documentos de ese tema. | `estrategias/recuperacion-documental` |
+| 4 | Abstención | Si no hay evidencia, no inventa: avisa y deriva la consulta al personal (RN09). | `estrategias/abstencion` |
+
+Reglas que aplica la búsqueda (en `ia/embeddings/texto.ts`):
+
+- **Plurales y sinónimos:** "inscripciones", "me inscribo" y "anotarme" se entienden igual; "rendir" y "final" equivalen a "examen".
+- **Meses:** "mesas de diciembre" muestra solo las de ese mes.
+- **Vigencia:** solo usa datos cuyo documento está vigente (RN07).
+- **Nada próximo no es "no sé":** si no hay inscripción abierta, dice cuál fue la última; si un trámite ya cerró, lo informa con su plazo; si una materia no tiene mesa propia, informa los turnos generales, que valen para todas.
+- **Dato faltante:** si piden correlativas sin nombrar la materia, pregunta cuál en lugar de derivar.
+- **Datos que la base no tiene** (aulas, horarios, docentes, costos): no los responde con datos exactos; si tampoco hay un documento, deriva.
+
+La "sabiduría" del asistente es la información oficial cargada: los turnos de examen, las inscripciones, los trámites, los eventos del calendario, las preguntas frecuentes y el texto de los documentos. Para que responda más, hay que cargar más información oficial, no escribir respuestas a mano.
+
+Los documentos se indexan mediante `POST /documentos/:id/contenido`, enviando texto institucional. El texto se parte por párrafos (separados por una línea en blanco), así cada fragmento es una idea completa que el asistente puede citar. Cada carga crea una versión y mantiene el historial. La recuperación utiliza la última versión y respeta la vigencia del documento.
 
 El adaptador HTTP opcional de IA selecciona evidencia existente según el contrato descrito en [docs/backend.md](docs/backend.md). WhatsApp necesita una cuenta y credenciales de Meta: mientras falten, informa que no está configurado. El canal web sigue disponible. Los envíos reales de WhatsApp y un proveedor comercial de IA requieren configuración y validación con esas cuentas.
 
@@ -96,7 +114,7 @@ npm test
 npm run test:e2e
 ```
 
-Las pruebas de integración crean PostgreSQL aislado en memoria con PGlite, aplican las migraciones y utilizan Prisma y los módulos reales. Se ejecutan sin modificar Supabase ni necesitar sus credenciales. El workflow de GitHub Actions ejecuta estas comprobaciones en los PR hacia `dev` y `main`.
+Las pruebas de integración crean PostgreSQL aislado en memoria con PGlite, aplican las migraciones y utilizan Prisma y los módulos reales. Se ejecutan sin modificar Supabase ni necesitar sus credenciales. `test/asistente.e2e-spec.ts` prueba cómo responde el asistente: saludos, correlativas, mesas por materia y por mes, inscripciones, trámites, calendario y abstención.
 
 La colección [AIda-backend.postman_collection.json](postman/AIda-backend.postman_collection.json) incluye la carpeta del TP12 y **Backend completo**, con 90 pedidos y 208 comprobaciones. Ver [la guía del backend en Postman](postman/Backend-completo.md). Los pedidos completos crean sus propios registros y los eliminan al finalizar.
 

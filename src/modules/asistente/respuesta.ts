@@ -7,7 +7,8 @@ export interface Evidencia {
 }
 export interface RespuestaAsistente {
   texto: string;
-  estrategia: 'DATOS_EXACTOS' | 'RECUPERACION_DOCUMENTAL' | 'ABSTENCION';
+  estrategia:
+    'CONVERSACION' | 'DATOS_EXACTOS' | 'RECUPERACION_DOCUMENTAL' | 'ABSTENCION';
   fuentes: Evidencia[];
   derivar: boolean;
   proveedor: string;
