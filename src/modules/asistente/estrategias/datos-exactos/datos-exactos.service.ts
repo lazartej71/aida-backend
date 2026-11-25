@@ -44,7 +44,7 @@ const reglasDeTema: [Tema, RegExp][] = [
   ['suficiencias', /suficiencia/],
   [
     'mesas',
-    /\bmesas?\b|examen|\bfinal(es)?\b|\brendir\b|\brindo\b|\bturnos?\b/,
+    /\bmesas?\b|examen|\bfinal(es)?\b|\brendir\b|\brindo\b|\bturnos?\b|\bllamados?\b/,
   ],
   ['inscripciones', /inscrib|inscripci|anotar/],
   [
@@ -57,7 +57,14 @@ const reglasDeTema: [Tema, RegExp][] = [
 // Datos que la base no tiene (horarios, aulas, docentes, costos). Si la consulta
 // pide alguno, no se responde con datos exactos: sigue a la búsqueda en documentos
 const noDisponible =
-  /\bcosto\b|\bprecio\b|\barancel\b|\btelefono\b|\bdireccion\b|\baula\b|\bdocente\b|\bprofesor\b|\bhorarios?\b|\bhora\b/;
+  /\bcosto\b|\bprecio\b|\barancel\b|\bpago\b|\bcuota\b|\btelefono\b|\bdireccion\b|\baula\b|\bdocente\b|\bprofesor\b|\bhorarios?\b|\bhora\b/;
+
+// Palabras de una consulta de correlativas que no nombran ninguna materia
+const palabrasDeCorrelativas = new Set(
+  terminos(
+    'correlativa correlativas tiene pide necesito cursado examen materia',
+  ),
+);
 
 // Palabras genéricas del calendario: no sirven para elegir un evento en particular
 const palabrasDeCalendario = new Set(
@@ -75,6 +82,17 @@ const respaldo = (dato: ConDocumento) => ({
   documentoId: dato.documentoId ?? undefined,
   url: dato.documento?.url,
 });
+
+// Los turnos guardan el cierre de inscripción en el título ("cierre de inscripción:
+// 23/11/2026"). Si esa fecha ya pasó, la mesa se muestra como "inscripción cerrada"
+const inscripcionCerrada = (titulo: string, hoy: Date) => {
+  const cierre = /cierre de inscripci[oó]n: (\d{2})\/(\d{2})\/(\d{4})/.exec(
+    titulo,
+  );
+  if (!cierre) return false;
+  const [, dia, mes, anio] = cierre;
+  return new Date(`${anio}-${mes}-${dia}T00:00:00Z`) < hoy;
+};
 
 // Un dato solo vale si su documento está vigente hoy (regla de negocio RN07)
 type Vigencia = {
@@ -161,13 +179,21 @@ export class DatosExactosService {
     texto: string,
   ): Promise<ResultadoDatosExactos> {
     const materia = await this.materiaMencionada(consulta, texto);
-    if (!materia)
-      return {
-        tema: 'correlativas',
-        evidencias: [],
-        aclaracion:
-          '¿De qué materia querés saber las correlativas? Por ejemplo: "correlativas de Física II".',
-      };
+    if (!materia) {
+      // Si no nombró ninguna materia, se le pregunta cuál. Si nombró una que no está
+      // cargada (por ejemplo, de otra carrera), no hay evidencia: se deriva al personal
+      const nombroAlgo = terminos(consulta).some(
+        (t) => !palabrasDeCorrelativas.has(t),
+      );
+      return nombroAlgo
+        ? { tema: 'correlativas', evidencias: [] }
+        : {
+            tema: 'correlativas',
+            evidencias: [],
+            aclaracion:
+              '¿De qué materia querés saber las correlativas? Por ejemplo: "correlativas de Física II".',
+          };
+    }
     const relaciones = await this.prisma.correlatividad.findMany({
       where: { materiaId: materia.id },
       include: { requiere: true },
@@ -270,7 +296,10 @@ export class DatosExactosService {
       .map(
         ([grupo, lista]) =>
           `${grupos.size > 1 ? `${grupo}:\n` : ''}${lista
-            .map((t) => `${formatearFecha(t.fechaDesde)}: ${t.titulo}.`)
+            .map(
+              (t) =>
+                `${formatearFecha(t.fechaDesde)}: ${t.titulo}.${inscripcionCerrada(t.titulo, hoy) ? ' Inscripción cerrada.' : ''}`,
+            )
             .join('\n')}`,
       )
       .join('\n\n');

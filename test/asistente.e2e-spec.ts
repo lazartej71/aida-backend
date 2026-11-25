@@ -77,6 +77,13 @@ describe('Asistente: conversación, datos exactos y abstención', () => {
           documentoId,
         },
         {
+          // Mesa futura cuyo cierre de inscripción ya pasó
+          titulo: '1° turno · Mesa II (cierre de inscripción: 01/01/2020)',
+          tipo: 'EXAMENES',
+          fechaDesde: new Date('2035-05-20'),
+          documentoId,
+        },
+        {
           titulo: 'Receso académico de verano',
           tipo: 'RECESO',
           fechaDesde: new Date('2036-01-01'),
@@ -202,6 +209,23 @@ describe('Asistente: conversación, datos exactos y abstención', () => {
     const res = await preguntar('¿Cuándo son las vacaciones de verano?');
     expect(res.body.estrategia).toBe('DATOS_EXACTOS');
     expect(res.body.respuesta).toContain('Receso académico de verano');
+  });
+
+  it('entiende "llamado" como mesa y marca las inscripciones ya cerradas', async () => {
+    const res = await preguntar('¿Cuál es el siguiente llamado?');
+    expect(res.body.estrategia).toBe('DATOS_EXACTOS');
+    expect(res.body.respuesta).toContain(
+      '20/05/2035: 1° turno · Mesa II (cierre de inscripción: 01/01/2020). Inscripción cerrada.',
+    );
+    expect(res.body.respuesta).not.toContain(
+      '10/05/2035). Inscripción cerrada.',
+    );
+  });
+
+  it('deriva las correlativas de una materia que no está cargada', async () => {
+    const res = await preguntar('Correlativas de Matemática en Programación');
+    expect(res.body.estrategia).toBe('ABSTENCION');
+    expect(res.body.derivada).toBe(true);
   });
 
   it('se abstiene y deriva lo que no tiene evidencia', async () => {
