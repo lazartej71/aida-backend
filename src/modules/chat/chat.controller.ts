@@ -14,7 +14,8 @@ import {
 import { ChatService } from './chat.service.js';
 import { CreateChatDto } from './dto/create-chat.dto.js';
 import { UpdateChatDto } from './dto/update-chat.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { MensajeDto } from './dto/mensaje.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
 

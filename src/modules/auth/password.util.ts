@@ -1,8 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 
+// bcrypt solo tiene en cuenta los primeros 72 bytes de una contraseña: se rechaza
+// cualquier contraseña más larga para que no se corte sin avisar
 const MAX_PASSWORD_BYTES = 72;
 
+// Encripta la contraseña con bcrypt antes de guardarla. El 12 es el "costo": cuántas
+// vueltas hace el algoritmo. Cuanto más alto, más lento de adivinar por fuerza bruta.
+// El resultado es un hash irreversible ($2b$12$…): no se puede volver a la contraseña
 export async function hashPassword(password: string) {
   if (Buffer.byteLength(password, 'utf8') > MAX_PASSWORD_BYTES) {
     throw new BadRequestException(
@@ -12,6 +17,8 @@ export async function hashPassword(password: string) {
   return bcrypt.hash(password, 12);
 }
 
+// Compara la contraseña que escribió el usuario con el hash guardado.
+// bcrypt.compare vuelve a encriptarla con la misma "sal" y compara los resultados
 export async function verifyPassword(password: string, passwordHash: string) {
   if (
     Buffer.byteLength(password, 'utf8') > MAX_PASSWORD_BYTES ||

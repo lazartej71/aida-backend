@@ -2,7 +2,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Controller, Get, Query } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsInt, Max, Min } from 'class-validator';
-import { Roles } from '../auth/acceso.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { MetricasService } from './metricas.service.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
 export class PeriodoMetricasDto {

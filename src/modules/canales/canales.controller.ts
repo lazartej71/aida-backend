@@ -12,7 +12,8 @@ import {
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { CanalesService } from './canales.service.js';
 import { ChatService } from '../chat/chat.service.js';
 import { MensajeDto } from '../chat/dto/mensaje.dto.js';

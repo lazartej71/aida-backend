@@ -26,10 +26,4 @@ export default defineConfig(
       '@typescript-eslint/no-floating-promises': 'error',
     },
   },
-  {
-    files: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
-    languageOptions: {
-      globals: globals.vitest,
-    },
-  },
 );

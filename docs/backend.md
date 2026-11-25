@@ -112,7 +112,7 @@ El adaptador implementa los webhooks de texto de WhatsApp Cloud API:
 
 Requiere `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` y `WHATSAPP_GRAPH_VERSION`. La versión se configura con la disponible en la cuenta de Meta, por ejemplo con formato `vNN.0`. El callback debe ser público y HTTPS en el entorno de despliegue.
 
-Sin estas credenciales el webhook devuelve 503. Las pruebas actuales verifican firma, suscripción, deduplicación y ausencia de envíos sin configuración. El envío real debe validarse al disponer de una cuenta de Meta. Un fallo de red después de que Meta acepte un envío puede dejar su resultado incierto; no se promete entrega exactamente una vez.
+Sin estas credenciales el webhook devuelve 503. El código verifica la firma, la suscripción y la deduplicación, y no envía nada mientras falte la configuración. El envío real debe validarse al disponer de una cuenta de Meta. Un fallo de red después de que Meta acepte un envío puede dejar su resultado incierto; no se promete entrega exactamente una vez.
 
 Referencia: [webhooks de Meta](https://developers.facebook.com/docs/graph-api/webhooks/getting-started/).
 

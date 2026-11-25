@@ -1,6 +1,6 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { AppService } from './app.service.js';
-import { Publico } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Controller()

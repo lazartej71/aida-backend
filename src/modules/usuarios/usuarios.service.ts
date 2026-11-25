@@ -8,6 +8,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
 import { operacion } from '../../common/database/operaciones.js';
 
+// Campos que se pueden mostrar de un usuario. passwordHash no está en la lista:
+// así la contraseña (aunque esté encriptada) nunca sale en una respuesta de la API
 export const usuarioPublico = {
   id: true,
   nombre: true,
@@ -18,10 +20,13 @@ export const usuarioPublico = {
   actualizadoEn: true,
 } as const;
 
+// Lógica de los usuarios. @Injectable() permite que Nest lo inyecte en otras clases
+// (UsuariosController y AuthService). Todo pasa por Prisma, que habla con la base
 @Injectable()
 export class UsuariosService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lo usa AuthService al registrar: recibe la contraseña ya encriptada con bcrypt
   crearParaRegistro(nombre: string, email: string, passwordHash: string) {
     return this.prisma.usuario.create({
       data: { nombre, email, passwordHash },
@@ -29,10 +34,12 @@ export class UsuariosService {
     });
   }
 
+  // Lo usa AuthService en el login. Es el único que trae passwordHash, para compararlo
   buscarPorEmail(email: string) {
     return this.prisma.usuario.findUnique({ where: { email } });
   }
 
+  // Listado paginado, con búsqueda por nombre o email
   async findAll(query: ListadoDto = new ListadoDto()) {
     const where = query.busqueda
       ? {
@@ -73,6 +80,8 @@ export class UsuariosService {
     return user;
   }
 
+  // Cambia nombre, email, rol o estado. No deja quitar al último administrador activo,
+  // y sube tokenVersion: las sesiones abiertas de ese usuario dejan de valer
   update(id: number, dto: UpdateUsuarioDto) {
     return operacion(() =>
       this.prisma.$transaction(
@@ -101,6 +110,7 @@ export class UsuariosService {
     );
   }
 
+  // Borra un usuario, salvo que sea el último administrador activo
   remove(id: number) {
     return operacion(() =>
       this.prisma.$transaction(

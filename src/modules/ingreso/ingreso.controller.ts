@@ -14,7 +14,8 @@ import { IngresoService } from './ingreso.service.js';
 import { CreateIngresoDto } from './dto/create-ingreso.dto.js';
 import { UpdateIngresoDto } from './dto/update-ingreso.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 @ApiBearerAuth()
 @ApiTags('ingreso')
 @Controller('ingreso')

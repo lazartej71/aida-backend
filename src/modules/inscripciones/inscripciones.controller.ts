@@ -14,7 +14,8 @@ import { InscripcionesService } from './inscripciones.service.js';
 import { CreateInscripcioneDto } from './dto/create-inscripcione.dto.js';
 import { UpdateInscripcioneDto } from './dto/update-inscripcione.dto.js';
 import { ListadoDto } from '../../common/dto/listado.dto.js';
-import { Publico, Roles } from '../auth/acceso.decorator.js';
+import { Publico } from '../auth/decorators/publico.decorator.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 @ApiBearerAuth()
 @ApiTags('inscripciones')
 @Controller('inscripciones')

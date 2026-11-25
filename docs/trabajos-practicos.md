@@ -20,7 +20,6 @@ El TP9 incorporó la estructura modular y doce recursos REST con operaciones CRU
 
 - **Nest.js** con **TypeScript**
 - **class-validator** y **class-transformer** para validar los datos que llegan a la API
-- **Vitest** para los tests
 - **ESLint** y **Prettier** para revisar y formatear el código
 
 ## Cómo correrlo
@@ -42,16 +41,14 @@ El archivo `.env` **no se sube a GitHub** (figura en `.gitignore`). Cada integra
 | `npm run start:dev`  | Levanta el servidor y lo reinicia al guardar cambios |
 | `npm run build`      | Compila el proyecto en `dist/`                       |
 | `npm run start:prod` | Levanta la versión compilada                         |
-| `npm test`           | Corre los tests                                      |
-| `npm run test:e2e`   | Corre los tests de punta a punta                     |
 | `npm run lint`       | Revisa el código con ESLint                          |
 | `npm run format`     | Formatea el código con Prettier                      |
 
-Las reglas de ESLint se configuran en `eslint.config.js`, usando el formato actual de ESLint y soporte para TypeScript y Vitest. El formato del código se aplica por separado con `npm run format`, según `.prettierrc`.
+Las reglas de ESLint se configuran en `eslint.config.js`, usando el formato actual de ESLint y soporte para TypeScript. El formato del código se aplica por separado con `npm run format`, según `.prettierrc`.
 
 ## Pruebas con Postman
 
-La carpeta `postman/` tiene la colección `AIda-backend.postman_collection.json`, con los pedidos de todas las rutas: una carpeta por recurso con `GET` para listar, `GET /:id`, `POST`, `PATCH` y `DELETE`, y cuerpos JSON de ejemplo. La carpeta **Validaciones (errores esperados)** tiene pedidos con datos incorrectos, cada uno con el error 400 que tiene que devolver.
+La carpeta `postman/` tiene la colección `AIda-backend.postman_collection.json`, con los pedidos de todas las rutas: una carpeta por módulo con títulos en mayúsculas (AUTH, USUARIOS, CARRERAS, MATERIAS…), cada una con `POST`, `GET` para listar, `GET /:id` y `PATCH`, y los casos de error con su código esperado. Las bajas (`DELETE`) están en la carpeta final **LIMPIEZA**. Ver [la guía de Postman](../postman/README.md).
 
 Para usarla:
 
@@ -103,10 +100,9 @@ src/
     ├── migrations/              creación de las tablas (001_crear_tablas.sql)
     ├── seeds/                   datos iniciales (001_datos_iniciales.sql)
     └── verificacion.sql         consultas para comprobar los datos y las restricciones
-test/                            tests de punta a punta
 ```
 
-Dentro de cada recurso, el controlador recibe las peticiones HTTP y llama al servicio, que contiene las respuestas de ejemplo. El módulo reúne su controlador y servicio. `dto/` contiene las clases para los datos de creación y actualización; `UpdateDto` usa `PartialType` de `@nestjs/mapped-types`, dependencia agregada por el generador de Usuarios. `entities/` contiene la clase que representará al recurso. Desde el TP10 los DTO definen y validan los datos de cada recurso (ver más abajo); las entidades siguen vacías hasta la conexión con la base de datos. Las carpetas reservadas para futuras etapas conservan sus archivos `.gitkeep`.
+Dentro de cada recurso, el controlador recibe las peticiones HTTP y llama al servicio, que contiene las respuestas de ejemplo. El módulo reúne su controlador y servicio. `dto/` contiene las clases para los datos de creación y actualización; `UpdateDto` usa `PartialType` de `@nestjs/mapped-types`, dependencia agregada por el generador de Usuarios. Desde el TP10 los DTO definen y validan los datos de cada recurso (ver más abajo). Las entidades que crea el generador (`entities/`) se eliminaron al conectar Prisma: los modelos de cada tabla están en `prisma/schema.prisma`. También se eliminaron los archivos de prueba generados (`*.spec.ts`) y las carpetas vacías.
 
 ## Alcance del TP9
 
@@ -144,8 +140,6 @@ Para verificar el trabajo:
 ```bash
 npm run build
 npm run lint
-npm test
-npm run test:e2e
 npm run start:dev
 ```
 
@@ -193,7 +187,7 @@ Cada módulo tiene su `Create...Dto`, con los mismos campos que su tabla en la b
 - Para marcar una derivación como `RESUELTA` hay que enviar la `respuesta`.
 - Desde el TP12, `CreateUsuarioDto` valida `nombre`, `email` y `password` y se reutiliza en el registro de `auth`. No existe un segundo registro en `POST /usuarios`.
 
-**Cómo probarlo:** en Postman, la carpeta **Validaciones (errores esperados)** manda datos incorrectos: un campo obligatorio que falta, texto donde va un número, un valor distinto de `true` o `false`, una fecha con otro formato y un campo que el DTO no declara. Los tests e2e (`npm run test:e2e`) prueban esos mismos casos.
+**Cómo probarlo:** en Postman, la carpeta **AUTH → VALIDACIONES DE REGISTRO Y LOGIN** y el pedido **CARRERAS → Rechazar datos inválidos** mandan datos incorrectos: un campo obligatorio que falta, texto donde va un número, un valor distinto de `true` o `false`, una fecha con otro formato y un campo que el DTO no declara.
 
 ## Base de datos
 
@@ -260,7 +254,7 @@ npm run prisma:generate
 npm run db:check
 ```
 
-`npm install` y `npm run build` generan automáticamente Prisma Client. El código generado no se versiona. `PrismaModule` es global y exporta `PrismaService`: se conecta al iniciar NestJS y se desconecta al cerrar la aplicación. Los tests de rutas sustituyen ese proveedor para ejecutarse sin acceder a Supabase; `db:check` verifica la conexión real.
+`npm install` y `npm run build` generan automáticamente Prisma Client. El código generado no se versiona. `PrismaModule` es global y exporta `PrismaService`: se conecta al iniciar NestJS y se desconecta al cerrar la aplicación. `npm run db:check` verifica la conexión real.
 
 ### Migración inicial con las tablas que ya existen
 
@@ -328,17 +322,17 @@ El JWT se firma con HS256 y vence en una hora. Su contenido incluye `sub` (id de
 
 ### Pruebas en Postman
 
-Importar `postman/AIda-backend.postman_collection.json` y ejecutar la carpeta **Autenticación (TP12)** en orden con **Collection Runner**. Tiene 11 pedidos con pruebas de respuestas correctas, JWT, duplicados, credenciales incorrectas, validaciones y ausencia de la ruta duplicada. El registro genera un correo nuevo y el login guarda el token en `accessToken`. Ver [guía de Postman del TP12](../postman/TP12-autenticacion.md).
+Importar `postman/AIda-backend.postman_collection.json` y ejecutar la carpeta **AUTH** en orden con **Run folder**. Su subcarpeta **VALIDACIONES DE REGISTRO Y LOGIN** tiene los 11 pedidos del TP12. Tiene 11 pedidos con pruebas de respuestas correctas, JWT, duplicados, credenciales incorrectas, validaciones y ausencia de la ruta duplicada. El registro genera un correo nuevo y el login guarda el token en `accessToken`. Ver [guía de Postman del TP12](../postman/TP12-autenticacion.md).
 
 También se puede ejecutar esa carpeta desde una terminal con Newman mientras el servidor está levantado:
 
 ```bash
-npx --yes newman run postman/AIda-backend.postman_collection.json --folder "Autenticación (TP12)"
+npx --yes newman run postman/AIda-backend.postman_collection.json --folder "VALIDACIONES DE REGISTRO Y LOGIN"
 ```
 
-Los tests unitarios comprueban el secreto JWT, el hash real de bcrypt y el límite de bytes. Las pruebas HTTP de autenticación usan el módulo real, bcrypt y JWT; sustituyen Prisma por un almacenamiento de prueba para ejecutarse sin red. Las pruebas Postman contra Supabase se realizan por separado. No compartir exportaciones que incluyan tokens o credenciales reales.
+No compartir exportaciones de Postman que incluyan tokens o credenciales reales.
 
-Validación realizada para el TP12: compilación y lint correctos, 36 pruebas unitarias y 86 pruebas HTTP aprobadas. La colección Postman se ejecutó mediante Newman contra NestJS y Supabase: 11 pedidos y 26 assertions aprobadas. Además se verificaron el hash persistido, la firma del JWT y sus 3600 segundos de vigencia. Se eliminó la cuenta temporal usada en esa ejecución. La base conserva los conteos originales del TP11 y tiene RLS activo en sus 14 tablas.
+Validación realizada para el TP12: compilación y lint correctos. La colección Postman se ejecutó mediante Newman contra NestJS y Supabase: 11 pedidos y 26 assertions aprobadas. Además se verificaron el hash persistido, la firma del JWT y sus 3600 segundos de vigencia. Se eliminó la cuenta temporal usada en esa ejecución. La base conserva los conteos originales del TP11 y tiene RLS activo en sus 14 tablas.
 
 ## Flujo de trabajo
 
