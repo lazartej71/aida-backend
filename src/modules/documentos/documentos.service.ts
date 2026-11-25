@@ -19,9 +19,19 @@ export class DocumentosService {
     const texto = contenido.trim();
     if (!texto)
       throw new BadRequestException('El contenido no puede estar vacío.');
-    const fragmentos: string[] = [];
-    for (let i = 0; i < texto.length; i += 1000)
-      fragmentos.push(texto.slice(i, i + 1200));
+    // El texto se parte por párrafos (separados por una línea en blanco), así cada
+    // fragmento es una idea completa y el asistente puede citarlo como respuesta.
+    // Un párrafo muy largo se corta en partes de 1200 caracteres
+    const fragmentos = texto
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .flatMap((p) => {
+        const partes: string[] = [];
+        for (let i = 0; i < p.length; i += 1200)
+          partes.push(p.slice(i, i + 1200));
+        return partes;
+      });
     return operacion(() =>
       this.prisma.$transaction(async (tx) => {
         const documento = await tx.documento.update({
