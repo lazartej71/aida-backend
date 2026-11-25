@@ -23,12 +23,10 @@ export class InscripcionesService {
     const where = {
       ...(query.busqueda
         ? {
-            OR: ['descripcion'].map((campo) => ({
-              [campo]: {
-                contains: query.busqueda,
-                mode: 'insensitive' as const,
-              },
-            })),
+            descripcion: {
+              contains: query.busqueda,
+              mode: 'insensitive' as const,
+            },
           }
         : {}),
       ...(query.tipo !== undefined ? { tipo: query.tipo } : {}),

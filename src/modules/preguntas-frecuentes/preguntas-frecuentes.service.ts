@@ -49,9 +49,9 @@ export class PreguntasFrecuentesService {
     return dato;
   }
   async update(id: number, dto: UpdatePreguntasFrecuenteDto) {
-    const actual = await this.findOne(id);
+    // Si el registro no existe, findOne responde 404 antes de intentar actualizar
+    await this.findOne(id);
     const datos = limpiarDatos(dto);
-    void actual;
     return operacion(() =>
       this.prisma.preguntaFrecuente.update({ where: { id }, data: datos }),
     );

@@ -21,12 +21,7 @@ export class CalendarioAcademicoService {
     const where = {
       ...(query.busqueda
         ? {
-            OR: ['titulo'].map((campo) => ({
-              [campo]: {
-                contains: query.busqueda,
-                mode: 'insensitive' as const,
-              },
-            })),
+            titulo: { contains: query.busqueda, mode: 'insensitive' as const },
           }
         : {}),
       ...(query.tipo !== undefined ? { tipo: query.tipo } : {}),
